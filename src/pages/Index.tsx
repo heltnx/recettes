@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { RecipeCard } from "@/components/RecipeCard";
 import { Category, Recipe } from "@/types/recipe";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 // Données temporaires pour la démo
 const demoRecipes: Recipe[] = [
@@ -26,6 +29,31 @@ export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth");
+      }
+    };
+    
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   const filteredRecipes = demoRecipes.filter(recipe => {
     const matchesCategory = !selectedCategory || recipe.category === selectedCategory;
@@ -36,6 +64,11 @@ export default function Index() {
   return (
     <div className="flex h-screen bg-gray-50">
       <aside className="w-64 border-r bg-white">
+        <div className="p-4">
+          <Button onClick={handleLogout} variant="outline" className="w-full">
+            Se déconnecter
+          </Button>
+        </div>
         <Sidebar
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
