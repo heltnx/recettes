@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -14,7 +14,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -27,8 +27,9 @@ export default function Auth() {
         if (error) throw error;
         toast({
           title: "Inscription réussie",
-          description: "Veuillez vérifier votre email pour confirmer votre compte.",
+          description: "Vous pouvez maintenant vous connecter",
         });
+        setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -56,7 +57,7 @@ export default function Auth() {
             {isSignUp ? "Créer un compte" : "Se connecter"}
           </h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleAuth}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
@@ -67,7 +68,7 @@ export default function Auth() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1"
+                placeholder="votre@email.com"
               />
             </div>
             <div>
@@ -79,37 +80,30 @@ export default function Auth() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1"
+                placeholder="••••••••"
               />
             </div>
           </div>
 
-          <div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+          <div className="flex flex-col gap-4">
+            <Button type="submit" disabled={isLoading}>
               {isLoading
                 ? "Chargement..."
                 : isSignUp
                 ? "S'inscrire"
                 : "Se connecter"}
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp
+                ? "Déjà un compte ? Se connecter"
+                : "Pas de compte ? S'inscrire"}
+            </Button>
           </div>
         </form>
-
-        <div className="text-center">
-          <Button
-            type="button"
-            variant="link"
-            onClick={() => setIsSignUp(!isSignUp)}
-          >
-            {isSignUp
-              ? "Déjà un compte ? Se connecter"
-              : "Pas de compte ? S'inscrire"}
-          </Button>
-        </div>
       </div>
     </div>
   );

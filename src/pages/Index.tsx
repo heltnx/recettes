@@ -6,6 +6,7 @@ import { Category, Recipe } from "@/types/recipe";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Données temporaires pour la démo
 const demoRecipes: Recipe[] = [
@@ -30,6 +31,7 @@ export default function Index() {
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -51,8 +53,14 @@ export default function Index() {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de se déconnecter",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredRecipes = demoRecipes.filter(recipe => {
