@@ -14,30 +14,12 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Données temporaires pour la démo
-const demoRecipes: Recipe[] = [
-  {
-    id: "1",
-    title: "Tarte aux pommes",
-    ingredients: "4 pommes\n150g de farine\n100g de beurre\n2 œufs",
-    description: "1. Préparer la pâte\n2. Éplucher les pommes\n3. Cuire 30min",
-    category: "Desserts"
-  },
-  {
-    id: "2",
-    title: "Salade César",
-    ingredients: "Laitue\nPoulet\nParmesan\nCroûtons",
-    description: "1. Laver la salade\n2. Griller le poulet\n3. Assembler",
-    category: "Salades"
-  }
-];
-
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
   ingredients: z.string().min(1, "Les ingrédients sont requis"),
   description: z.string().min(1, "La description est requise"),
   category: z.string().min(1, "La catégorie est requise"),
-  subCategory: z.string().optional(),
+  sub_category: z.string().optional(),
 });
 
 export default function Index() {
@@ -45,6 +27,7 @@ export default function Index() {
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingRecipe, setIsAddingRecipe] = useState(false);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -55,7 +38,7 @@ export default function Index() {
       ingredients: "",
       description: "",
       category: "",
-      subCategory: "",
+      sub_category: "",
     },
   });
 
@@ -78,23 +61,16 @@ export default function Index() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de se déconnecter",
-        variant: "destructive",
-      });
-    }
-  };
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     const { error } = await supabase.from("recipes").insert({
-      ...values,
+      title: values.title,
+      ingredients: values.ingredients,
+      description: values.description,
+      category: values.category,
+      sub_category: values.sub_category || null,
       user_id: session.user.id,
     });
 
@@ -116,7 +92,18 @@ export default function Index() {
     setIsAddingRecipe(false);
   };
 
-  const filteredRecipes = demoRecipes.filter(recipe => {
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de se déconnecter",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredRecipes = recipes.filter(recipe => {
     const matchesCategory = !selectedCategory || recipe.category === selectedCategory;
     const matchesSearch = recipe.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -223,7 +210,7 @@ export default function Index() {
 
                   <FormField
                     control={form.control}
-                    name="subCategory"
+                    name="sub_category"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sous-catégorie</FormLabel>
