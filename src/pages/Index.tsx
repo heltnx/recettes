@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { RecipeCard } from "@/components/RecipeCard";
-import { Category, Recipe, SubCategory } from "@/types/recipe";
+import { Category, Recipe } from "@/types/recipe";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +41,29 @@ export default function Index() {
       sub_category: "",
     },
   });
+
+  // Fetch recipes when component mounts and after adding a new recipe
+  const fetchRecipes = async () => {
+    const { data, error } = await supabase
+      .from("recipes")
+      .select("*")
+      .order('title', { ascending: true });
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les recettes",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRecipes(data);
+  };
+
+  useEffect(() => {
+    fetchRecipes();
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -90,6 +113,7 @@ export default function Index() {
 
     form.reset();
     setIsAddingRecipe(false);
+    fetchRecipes(); // Refresh the recipes list after adding a new one
   };
 
   const handleLogout = async () => {
