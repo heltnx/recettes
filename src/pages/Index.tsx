@@ -28,6 +28,7 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingRecipe, setIsAddingRecipe] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,7 +43,6 @@ export default function Index() {
     },
   });
 
-  // Fetch recipes when component mounts and after adding a new recipe
   const fetchRecipes = async () => {
     const { data, error } = await supabase
       .from("recipes")
@@ -58,7 +58,7 @@ export default function Index() {
       return;
     }
 
-    setRecipes(data);
+    setRecipes(data as Recipe[]);
   };
 
   useEffect(() => {
@@ -88,19 +88,78 @@ export default function Index() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { error } = await supabase.from("recipes").insert({
-      title: values.title,
-      ingredients: values.ingredients,
-      description: values.description,
-      category: values.category,
-      sub_category: values.sub_category || null,
+    const recipeData = {
+      ...values,
       user_id: session.user.id,
+    };
+
+    if (editingRecipe) {
+      const { error } = await supabase
+        .from("recipes")
+        .update(recipeData)
+        .eq('id', editingRecipe.id);
+
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de modifier la recette",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Succès",
+        description: "La recette a été modifiée",
+      });
+    } else {
+      const { error } = await supabase
+        .from("recipes")
+        .insert(recipeData);
+
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'ajouter la recette",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Succès",
+        description: "La recette a été ajoutée",
+      });
+    }
+
+    form.reset();
+    setIsAddingRecipe(false);
+    setEditingRecipe(null);
+    fetchRecipes();
+  };
+
+  const handleEdit = (recipe: Recipe) => {
+    setEditingRecipe(recipe);
+    setIsAddingRecipe(true);
+    form.reset({
+      title: recipe.title,
+      ingredients: recipe.ingredients,
+      description: recipe.description,
+      category: recipe.category,
+      sub_category: recipe.sub_category || undefined,
     });
+  };
+
+  const handleDelete = async (recipe: Recipe) => {
+    const { error } = await supabase
+      .from("recipes")
+      .delete()
+      .eq('id', recipe.id);
 
     if (error) {
       toast({
         title: "Erreur",
-        description: "Impossible d'ajouter la recette",
+        description: "Impossible de supprimer la recette",
         variant: "destructive",
       });
       return;
@@ -108,12 +167,10 @@ export default function Index() {
 
     toast({
       title: "Succès",
-      description: "La recette a été ajoutée",
+      description: "La recette a été supprimée",
     });
 
-    form.reset();
-    setIsAddingRecipe(false);
-    fetchRecipes(); // Refresh the recipes list after adding a new one
+    fetchRecipes();
   };
 
   const handleLogout = async () => {
@@ -156,7 +213,13 @@ export default function Index() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-md"
             />
-            <Button onClick={() => setIsAddingRecipe(!isAddingRecipe)}>
+            <Button onClick={() => {
+              setIsAddingRecipe(!isAddingRecipe);
+              if (!isAddingRecipe) {
+                setEditingRecipe(null);
+                form.reset();
+              }
+            }}>
               {isAddingRecipe ? "Annuler" : "Ajouter une recette"}
             </Button>
           </div>
@@ -257,7 +320,9 @@ export default function Index() {
                     )}
                   />
 
-                  <Button type="submit">Ajouter la recette</Button>
+                  <Button type="submit">
+                    {editingRecipe ? "Modifier la recette" : "Ajouter la recette"}
+                  </Button>
                 </form>
               </Form>
             </div>
@@ -271,6 +336,8 @@ export default function Index() {
                   onClick={() => setExpandedRecipeId(
                     expandedRecipeId === recipe.id ? null : recipe.id
                   )}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>

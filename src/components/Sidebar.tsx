@@ -1,9 +1,10 @@
 import { Category, SubCategory } from "@/types/recipe";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   selectedCategory: Category | null;
-  onSelectCategory: (category: Category) => void;
+  onSelectCategory: (category: Category | null) => void;
 }
 
 const categories: { name: Category; subCategories?: SubCategory[] }[] = [
@@ -26,6 +27,16 @@ export function Sidebar({ selectedCategory, onSelectCategory }: SidebarProps) {
             Catégories
           </h2>
           <div className="space-y-1">
+            <Button
+              variant="ghost"
+              onClick={() => onSelectCategory(null)}
+              className={cn(
+                "w-full justify-start px-4",
+                !selectedCategory && "bg-recipe-200"
+              )}
+            >
+              Tout afficher
+            </Button>
             {categories.map((category) => (
               <div key={category.name}>
                 <button
