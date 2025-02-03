@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { RecipeCard } from "@/components/RecipeCard";
-import { Category, Recipe } from "@/types/recipe";
+import { Category, Recipe, SubCategory } from "@/types/recipe";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,11 +24,11 @@ const formSchema = z.object({
 
 export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategory | null>(null);
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingRecipe, setIsAddingRecipe] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -245,13 +245,20 @@ export default function Index() {
 
   const handleCategorySelect = (category: Category | null) => {
     setSelectedCategory(category);
+    setSelectedSubCategory(null);
+    setExpandedRecipeId(null);
+  };
+
+  const handleSubCategorySelect = (subCategory: SubCategory | null) => {
+    setSelectedSubCategory(subCategory);
     setExpandedRecipeId(null);
   };
 
   const filteredRecipes = recipes.filter(recipe => {
     const matchesCategory = !selectedCategory || recipe.category === selectedCategory;
+    const matchesSubCategory = !selectedSubCategory || recipe.sub_category === selectedSubCategory;
     const matchesSearch = recipe.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesSubCategory && matchesSearch;
   });
 
   return (
@@ -264,7 +271,9 @@ export default function Index() {
         </div>
         <Sidebar
           selectedCategory={selectedCategory}
+          selectedSubCategory={selectedSubCategory}
           onSelectCategory={handleCategorySelect}
+          onSelectSubCategory={handleSubCategorySelect}
         />
       </aside>
       <main className="flex-1 overflow-y-auto p-8">

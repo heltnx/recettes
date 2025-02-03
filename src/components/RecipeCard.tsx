@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -36,13 +38,19 @@ export function RecipeCard({
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editedRecipe, setEditedRecipe] = useState(recipe);
+  const [imageUrl, setImageUrl] = useState("");
+  const [useImageUrl, setUseImageUrl] = useState(false);
 
   const handleEdit = () => {
     if (isEditing) {
-      onEdit(editedRecipe);
+      onEdit({
+        ...editedRecipe,
+        image_url: useImageUrl ? imageUrl : editedRecipe.image_url
+      });
       setIsEditing(false);
     } else {
       setIsEditing(true);
+      setImageUrl(recipe.image_url || "");
     }
   };
 
@@ -50,6 +58,12 @@ export function RecipeCard({
     const file = e.target.files?.[0];
     if (file) {
       await onImageUpload(recipe, file);
+    }
+  };
+
+  const stopPropagation = (e: React.MouseEvent) => {
+    if (isEditing) {
+      e.stopPropagation();
     }
   };
 
@@ -64,9 +78,9 @@ export function RecipeCard({
       >
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div className="flex items-center gap-4 flex-1">
-            {recipe.imageUrl && (
+            {recipe.image_url && (
               <img 
-                src={recipe.imageUrl} 
+                src={recipe.image_url} 
                 alt={recipe.title}
                 className="w-12 h-12 object-cover rounded-md"
               />
@@ -75,9 +89,12 @@ export function RecipeCard({
               {recipe.title}
             </CardTitle>
           </div>
+          <div className="text-sm text-gray-500">
+            {recipe.category} {recipe.sub_category && `- ${recipe.sub_category}`}
+          </div>
         </CardHeader>
         {isExpanded && (
-          <CardContent>
+          <CardContent onClick={stopPropagation}>
             <div className="space-y-4">
               {isEditing ? (
                 <>
@@ -102,6 +119,90 @@ export function RecipeCard({
                       })}
                       className="min-h-[100px] resize-none appearance-none"
                     />
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Catégorie</h4>
+                    <Select
+                      value={editedRecipe.category}
+                      onValueChange={(value) => setEditedRecipe({
+                        ...editedRecipe,
+                        category: value as Category,
+                        sub_category: value === "Plats" ? editedRecipe.sub_category : undefined
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner une catégorie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Apéros">Apéros</SelectItem>
+                        <SelectItem value="Entrées">Entrées</SelectItem>
+                        <SelectItem value="Plats">Plats</SelectItem>
+                        <SelectItem value="Salades">Salades</SelectItem>
+                        <SelectItem value="Soupes">Soupes</SelectItem>
+                        <SelectItem value="Desserts">Desserts</SelectItem>
+                        <SelectItem value="Autres">Autres</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {editedRecipe.category === "Plats" && (
+                    <div>
+                      <h4 className="font-medium mb-2">Sous-catégorie</h4>
+                      <Select
+                        value={editedRecipe.sub_category || ""}
+                        onValueChange={(value) => setEditedRecipe({
+                          ...editedRecipe,
+                          sub_category: value as SubCategory
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner une sous-catégorie" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Viande">Viande</SelectItem>
+                          <SelectItem value="Volaille">Volaille</SelectItem>
+                          <SelectItem value="Poisson">Poisson</SelectItem>
+                          <SelectItem value="Crustacés">Crustacés</SelectItem>
+                          <SelectItem value="Légumes">Légumes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-medium mb-2">Image</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="useImageUrl"
+                          checked={useImageUrl}
+                          onChange={(e) => setUseImageUrl(e.target.checked)}
+                        />
+                        <label htmlFor="useImageUrl">Utiliser une URL d'image</label>
+                      </div>
+                      {useImageUrl ? (
+                        <Input
+                          type="url"
+                          placeholder="URL de l'image"
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                        />
+                      ) : (
+                        <Button
+                          variant="outline"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
+                            input.click();
+                          }}
+                        >
+                          <Image className="h-4 w-4 mr-2" />
+                          Uploader une image
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </>
               ) : (
@@ -140,7 +241,7 @@ export function RecipeCard({
                     </Button>
                   )}
                 </div>
-                <div className="flex gap-2">
+                {!isEditing && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -151,21 +252,7 @@ export function RecipeCard({
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = 'image/*';
-                      input.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
-                      input.click();
-                    }}
-                  >
-                    <Image className="h-4 w-4" />
-                  </Button>
-                </div>
+                )}
               </div>
             </div>
           </CardContent>
