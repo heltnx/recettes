@@ -51,6 +51,11 @@ export function RecipeCard({
   const [useImageUrl, setUseImageUrl] = useState(false);
 
   useEffect(() => {
+    setEditedRecipe(recipe);
+    setImageUrl(recipe.image_url || "");
+  }, [recipe]);
+
+  useEffect(() => {
     if (!isExpanded && isEditing) {
       handleEdit();
     }
@@ -58,10 +63,11 @@ export function RecipeCard({
 
   const handleEdit = () => {
     if (isEditing) {
-      onEdit({
+      const updatedRecipe = {
         ...editedRecipe,
         image_url: useImageUrl ? imageUrl : editedRecipe.image_url
-      });
+      };
+      onEdit(updatedRecipe);
       setIsEditing(false);
     } else {
       setIsEditing(true);
@@ -94,12 +100,12 @@ export function RecipeCard({
       >
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-medium">
-            {recipe.title}
+            {editedRecipe.title}
           </CardTitle>
-          {recipe.image_url && (
+          {editedRecipe.image_url && (
             <img 
-              src={recipe.image_url} 
-              alt={recipe.title}
+              src={editedRecipe.image_url} 
+              alt={editedRecipe.title}
               className="w-12 h-12 object-cover rounded-md"
             />
           )}
@@ -215,6 +221,10 @@ export function RecipeCard({
                               onChange={(e) => {
                                 setImageUrl(e.target.value);
                                 setUseImageUrl(true);
+                                setEditedRecipe({
+                                  ...editedRecipe,
+                                  image_url: e.target.value
+                                });
                               }}
                             />
                             <Button
@@ -240,14 +250,14 @@ export function RecipeCard({
                 <>
                   <div>
                     <h4 className="font-medium mb-2">Ingrédients</h4>
-                    <p className="text-sm whitespace-pre-line">{recipe.ingredients}</p>
+                    <p className="text-sm whitespace-pre-line">{editedRecipe.ingredients}</p>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Préparation</h4>
-                    <p className="text-sm whitespace-pre-line">{recipe.description}</p>
+                    <p className="text-sm whitespace-pre-line">{editedRecipe.description}</p>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {recipe.category} {recipe.sub_category && `- ${recipe.sub_category}`}
+                    {editedRecipe.category} {editedRecipe.sub_category && `- ${editedRecipe.sub_category}`}
                   </div>
                 </>
               )}
