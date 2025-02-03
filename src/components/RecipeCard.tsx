@@ -1,7 +1,7 @@
 import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Image } from "lucide-react";
+import { Image, Link } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -13,10 +13,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -38,8 +46,15 @@ export function RecipeCard({
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editedRecipe, setEditedRecipe] = useState(recipe);
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState(recipe.image_url || "");
+  const [showImageDialog, setShowImageDialog] = useState(false);
   const [useImageUrl, setUseImageUrl] = useState(false);
+
+  useEffect(() => {
+    if (!isExpanded && isEditing) {
+      handleEdit();
+    }
+  }, [isExpanded]);
 
   const handleEdit = () => {
     if (isEditing) {
@@ -58,6 +73,7 @@ export function RecipeCard({
     const file = e.target.files?.[0];
     if (file) {
       await onImageUpload(recipe, file);
+      setShowImageDialog(false);
     }
   };
 
@@ -77,21 +93,16 @@ export function RecipeCard({
         onClick={onClick}
       >
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-4 flex-1">
-            {recipe.image_url && (
-              <img 
-                src={recipe.image_url} 
-                alt={recipe.title}
-                className="w-12 h-12 object-cover rounded-md"
-              />
-            )}
-            <CardTitle className="text-lg font-medium">
-              {recipe.title}
-            </CardTitle>
-          </div>
-          <div className="text-sm text-gray-500">
-            {recipe.category} {recipe.sub_category && `- ${recipe.sub_category}`}
-          </div>
+          <CardTitle className="text-lg font-medium">
+            {recipe.title}
+          </CardTitle>
+          {recipe.image_url && (
+            <img 
+              src={recipe.image_url} 
+              alt={recipe.title}
+              className="w-12 h-12 object-cover rounded-md"
+            />
+          )}
         </CardHeader>
         {isExpanded && (
           <CardContent onClick={stopPropagation}>
@@ -169,40 +180,60 @@ export function RecipeCard({
                   )}
                   <div>
                     <h4 className="font-medium mb-2">Image</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="useImageUrl"
-                          checked={useImageUrl}
-                          onChange={(e) => setUseImageUrl(e.target.checked)}
-                        />
-                        <label htmlFor="useImageUrl">Utiliser une URL d'image</label>
-                      </div>
-                      {useImageUrl ? (
-                        <Input
-                          type="url"
-                          placeholder="URL de l'image"
-                          value={imageUrl}
-                          onChange={(e) => setImageUrl(e.target.value)}
-                        />
-                      ) : (
-                        <Button
-                          variant="outline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = 'image/*';
-                            input.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
-                            input.click();
-                          }}
-                        >
-                          <Image className="h-4 w-4 mr-2" />
-                          Uploader une image
+                    <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full">
+                          {editedRecipe.image_url ? "Modifier l'image" : "Ajouter une image"}
                         </Button>
-                      )}
-                    </div>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Ajouter une image</DialogTitle>
+                          <DialogDescription>
+                            Choisissez comment ajouter votre image
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex flex-col gap-4">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
+                              input.click();
+                            }}
+                          >
+                            <Image className="h-4 w-4 mr-2" />
+                            Télécharger une image
+                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="url"
+                              placeholder="Lien de l'image"
+                              value={imageUrl}
+                              onChange={(e) => {
+                                setImageUrl(e.target.value);
+                                setUseImageUrl(true);
+                              }}
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setEditedRecipe({
+                                  ...editedRecipe,
+                                  image_url: imageUrl
+                                });
+                                setShowImageDialog(false);
+                              }}
+                            >
+                              <Link className="h-4 w-4 mr-2" />
+                              Utiliser
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </>
               ) : (
@@ -214,6 +245,9 @@ export function RecipeCard({
                   <div>
                     <h4 className="font-medium mb-2">Préparation</h4>
                     <p className="text-sm whitespace-pre-line">{recipe.description}</p>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {recipe.category} {recipe.sub_category && `- ${recipe.sub_category}`}
                   </div>
                 </>
               )}
