@@ -3,7 +3,9 @@ export type Category =
   | "Entrées"
   | "Plats"
   | "Salades"
-  | "Desserts";
+  | "Desserts"
+  | "Soupes"
+  | "Autres";
 
 export type SubCategory = 
   | "Viande"
@@ -18,6 +20,7 @@ export interface Recipe {
   ingredients: string;
   description: string;
   category: Category;
-  subCategory?: SubCategory;
+  sub_category?: SubCategory;
   imageUrl?: string;
+  user_id: string;
 }

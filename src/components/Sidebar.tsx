@@ -10,12 +10,11 @@ interface SidebarProps {
 const categories: { name: Category; subCategories?: SubCategory[] }[] = [
   { name: "Apéros" },
   { name: "Entrées" },
-  { 
-    name: "Plats",
-    subCategories: ["Viande", "Volaille", "Poisson", "Crustacés", "Légumes"]
-  },
+  { name: "Plats", subCategories: ["Viande", "Volaille", "Poisson", "Crustacés", "Légumes"] },
   { name: "Salades" },
-  { name: "Desserts" }
+  { name: "Soupes" },
+  { name: "Desserts" },
+  { name: "Autres" }
 ];
 
 export function Sidebar({ selectedCategory, onSelectCategory }: SidebarProps) {
