@@ -1,7 +1,7 @@
 import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Image, Link } from "lucide-react";
+import { Image, Link, Trash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -284,7 +284,7 @@ export function RecipeCard({
                       setShowDeleteDialog(true);
                     }}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash className="h-4 w-4" />
                   </Button>
                 )}
               </div>
