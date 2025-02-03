@@ -1,4 +1,4 @@
-import { Recipe } from "@/types/recipe";
+import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Image } from "lucide-react";

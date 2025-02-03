@@ -29,6 +29,7 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingRecipe, setIsAddingRecipe] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -141,7 +142,10 @@ export default function Index() {
   const handleEdit = async (recipe: Recipe) => {
     const { error } = await supabase
       .from("recipes")
-      .update(recipe)
+      .update({
+        ...recipe,
+        image_url: recipe.image_url
+      })
       .eq('id', recipe.id);
 
     if (error) {
@@ -212,7 +216,7 @@ export default function Index() {
 
     const { error: updateError } = await supabase
       .from("recipes")
-      .update({ imageUrl: publicUrl })
+      .update({ image_url: publicUrl })
       .eq('id', recipe.id);
 
     if (updateError) {
