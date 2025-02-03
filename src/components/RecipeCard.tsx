@@ -60,8 +60,9 @@ export function RecipeCard({
           "cursor-pointer transition-all duration-300 hover:shadow-md",
           isExpanded && "ring-2 ring-recipe-300"
         )}
+        onClick={onClick}
       >
-        <CardHeader className="pb-3 flex flex-row items-center justify-between" onClick={onClick}>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div className="flex items-center gap-4 flex-1">
             {recipe.imageUrl && (
               <img 
@@ -74,18 +75,6 @@ export function RecipeCard({
               {recipe.title}
             </CardTitle>
           </div>
-          {!isExpanded && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDeleteDialog(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
         </CardHeader>
         {isExpanded && (
           <CardContent>
@@ -100,7 +89,7 @@ export function RecipeCard({
                         ...editedRecipe,
                         ingredients: e.target.value
                       })}
-                      className="min-h-[100px] resize-none"
+                      className="min-h-[100px] resize-none appearance-none"
                     />
                   </div>
                   <div>
@@ -111,7 +100,7 @@ export function RecipeCard({
                         ...editedRecipe,
                         description: e.target.value
                       })}
-                      className="min-h-[100px] resize-none"
+                      className="min-h-[100px] resize-none appearance-none"
                     />
                   </div>
                 </>
@@ -131,14 +120,18 @@ export function RecipeCard({
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={handleEdit}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit();
+                    }}
                   >
                     {isEditing ? "Enregistrer" : "Modifier"}
                   </Button>
                   {isEditing && (
                     <Button
                       variant="outline"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setIsEditing(false);
                         setEditedRecipe(recipe);
                       }}
@@ -151,7 +144,10 @@ export function RecipeCard({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setShowDeleteDialog(true)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteDialog(true);
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -159,7 +155,7 @@ export function RecipeCard({
                     variant="ghost"
                     size="icon"
                     onClick={(e) => {
-                      e.preventDefault();
+                      e.stopPropagation();
                       const input = document.createElement('input');
                       input.type = 'file';
                       input.accept = 'image/*';

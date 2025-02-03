@@ -91,7 +91,7 @@ export default function Index() {
     const recipeData = {
       ...values,
       user_id: session.user.id,
-    };
+    } as Recipe;
 
     if (editingRecipe) {
       const { error } = await supabase
@@ -138,16 +138,27 @@ export default function Index() {
     fetchRecipes();
   };
 
-  const handleEdit = (recipe: Recipe) => {
-    setEditingRecipe(recipe);
-    setIsAddingRecipe(true);
-    form.reset({
-      title: recipe.title,
-      ingredients: recipe.ingredients,
-      description: recipe.description,
-      category: recipe.category,
-      sub_category: recipe.sub_category || undefined,
+  const handleEdit = async (recipe: Recipe) => {
+    const { error } = await supabase
+      .from("recipes")
+      .update(recipe)
+      .eq('id', recipe.id);
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier la recette",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Succès",
+      description: "La recette a été modifiée",
     });
+
+    fetchRecipes();
   };
 
   const handleDelete = async (recipe: Recipe) => {
@@ -173,6 +184,54 @@ export default function Index() {
     fetchRecipes();
   };
 
+  const handleImageUpload = async (recipe: Recipe, file: File) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${recipe.id}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('recipe-images')
+      .upload(filePath, file, {
+        upsert: true
+      });
+
+    if (uploadError) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'uploader l'image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('recipe-images')
+      .getPublicUrl(filePath);
+
+    const { error: updateError } = await supabase
+      .from("recipes")
+      .update({ imageUrl: publicUrl })
+      .eq('id', recipe.id);
+
+    if (updateError) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour l'image de la recette",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Succès",
+      description: "L'image a été uploadée",
+    });
+
+    fetchRecipes();
+  };
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -182,6 +241,11 @@ export default function Index() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleCategorySelect = (category: Category | null) => {
+    setSelectedCategory(category);
+    setExpandedRecipeId(null);
   };
 
   const filteredRecipes = recipes.filter(recipe => {
@@ -200,7 +264,7 @@ export default function Index() {
         </div>
         <Sidebar
           selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
+          onSelectCategory={handleCategorySelect}
         />
       </aside>
       <main className="flex-1 overflow-y-auto p-8">
@@ -287,7 +351,9 @@ export default function Index() {
                             <SelectItem value="Entrées">Entrées</SelectItem>
                             <SelectItem value="Plats">Plats</SelectItem>
                             <SelectItem value="Salades">Salades</SelectItem>
+                            <SelectItem value="Soupes">Soupes</SelectItem>
                             <SelectItem value="Desserts">Desserts</SelectItem>
+                            <SelectItem value="Autres">Autres</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -295,30 +361,32 @@ export default function Index() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="sub_category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Sous-catégorie</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner une sous-catégorie" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Viande">Viande</SelectItem>
-                            <SelectItem value="Volaille">Volaille</SelectItem>
-                            <SelectItem value="Poisson">Poisson</SelectItem>
-                            <SelectItem value="Crustacés">Crustacés</SelectItem>
-                            <SelectItem value="Légumes">Légumes</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {form.watch("category") === "Plats" && (
+                    <FormField
+                      control={form.control}
+                      name="sub_category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sous-catégorie</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner une sous-catégorie" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Viande">Viande</SelectItem>
+                              <SelectItem value="Volaille">Volaille</SelectItem>
+                              <SelectItem value="Poisson">Poisson</SelectItem>
+                              <SelectItem value="Crustacés">Crustacés</SelectItem>
+                              <SelectItem value="Légumes">Légumes</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <Button type="submit">
                     {editingRecipe ? "Modifier la recette" : "Ajouter la recette"}
@@ -338,6 +406,7 @@ export default function Index() {
                   )}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onImageUpload={handleImageUpload}
                 />
               ))}
             </div>
