@@ -36,13 +36,13 @@ export function ShareRecipeDialog({ recipe }: ShareRecipeDialogProps) {
     setIsLoading(true);
 
     // First, find the user by email
-    const { data: users, error: userError } = await supabase
-      .from('auth.users')
-      .select('id')
-      .eq('email', email)
-      .single();
+    const { data: { users }, error: userError } = await supabase.auth.admin.listUsers({
+      filters: {
+        email: email
+      }
+    });
 
-    if (userError || !users) {
+    if (userError || !users || users.length === 0) {
       toast({
         title: "Erreur",
         description: "Utilisateur non trouvé",
@@ -52,27 +52,52 @@ export function ShareRecipeDialog({ recipe }: ShareRecipeDialogProps) {
       return;
     }
 
-    // Create the share record
-    const { error: shareError } = await supabase
-      .from('recipe_shares')
+    const toUserId = users[0].id;
+
+    // Create a copy of the recipe for the other user
+    const { title, ingredients, description, category, sub_category, image_url } = recipe;
+    const { error: recipeError } = await supabase
+      .from('recipes')
       .insert({
-        recipe_id: recipe.id,
-        from_user_id: recipe.user_id,
-        to_user_id: users.id,
+        title,
+        ingredients,
+        description,
+        category,
+        sub_category,
+        image_url,
+        user_id: toUserId
       });
 
-    if (shareError) {
+    if (recipeError) {
       toast({
         title: "Erreur",
         description: "Impossible de partager la recette",
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Succès",
-        description: "La recette a été partagée",
-      });
+      // Create the share record
+      const { error: shareError } = await supabase
+        .from('recipe_shares')
+        .insert({
+          recipe_id: recipe.id,
+          from_user_id: recipe.user_id,
+          to_user_id: toUserId,
+        });
+
+      if (shareError) {
+        toast({
+          title: "Attention",
+          description: "La recette a été copiée mais l'enregistrement du partage a échoué",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Succès",
+          description: "La recette a été partagée",
+        });
+      }
       setIsOpen(false);
+      setEmail("");
     }
 
     setIsLoading(false);
