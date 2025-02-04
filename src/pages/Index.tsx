@@ -20,7 +20,6 @@ const formSchema = z.object({
   description: z.string().min(1, "La description est requise"),
   category: z.string().min(1, "La catégorie est requise"),
   sub_category: z.string().optional(),
-  image_url: z.string().optional(),
 });
 
 export default function Index() {
@@ -42,7 +41,6 @@ export default function Index() {
       description: "",
       category: "",
       sub_category: "",
-      image_url: "",
     },
   });
 
@@ -190,12 +188,12 @@ export default function Index() {
     fetchRecipes();
   };
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (recipe: Recipe, file: File) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     const fileExt = file.name.split('.').pop();
-    const filePath = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `${recipe.id}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('recipe-images')
@@ -216,7 +214,26 @@ export default function Index() {
       .from('recipe-images')
       .getPublicUrl(filePath);
 
-    form.setValue("image_url", publicUrl);
+    const { error: updateError } = await supabase
+      .from("recipes")
+      .update({ image_url: publicUrl })
+      .eq('id', recipe.id);
+
+    if (updateError) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour l'image de la recette",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Succès",
+      description: "L'image a été uploadée",
+    });
+
+    fetchRecipes();
   };
 
   const handleLogout = async () => {
@@ -309,12 +326,7 @@ export default function Index() {
                       <FormItem>
                         <FormLabel>Ingrédients</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
-                            placeholder="Un ingrédient par ligne"
-                            className="min-h-fit"
-                            style={{ height: 'auto' }}
-                          />
+                          <Textarea {...field} placeholder="Un ingrédient par ligne" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -328,12 +340,7 @@ export default function Index() {
                       <FormItem>
                         <FormLabel>Instructions</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
-                            placeholder="Les étapes de la recette"
-                            className="min-h-fit"
-                            style={{ height: 'auto' }}
-                          />
+                          <Textarea {...field} placeholder="Les étapes de la recette" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -393,38 +400,6 @@ export default function Index() {
                       )}
                     />
                   )}
-
-                  <FormField
-                    control={form.control}
-                    name="image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Image</FormLabel>
-                        <FormControl>
-                          <div className="space-y-4">
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  handleImageUpload(file);
-                                }
-                              }}
-                            />
-                            {field.value && (
-                              <img
-                                src={field.value}
-                                alt="Preview"
-                                className="w-32 h-32 object-cover rounded-md"
-                              />
-                            )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
                   <Button type="submit">
                     {editingRecipe ? "Modifier la recette" : "Ajouter la recette"}
