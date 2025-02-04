@@ -20,6 +20,7 @@ const formSchema = z.object({
   description: z.string().min(1, "La description est requise"),
   category: z.string().min(1, "La catégorie est requise"),
   sub_category: z.string().optional(),
+  image_url: z.string().optional(),
 });
 
 export default function Index() {
@@ -41,6 +42,7 @@ export default function Index() {
       description: "",
       category: "",
       sub_category: "",
+      image_url: "",
     },
   });
 
