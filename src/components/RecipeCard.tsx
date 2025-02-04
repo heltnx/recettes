@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ShareRecipeDialog } from "@/components/ShareRecipeDialog";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -293,16 +294,19 @@ export function RecipeCard({
                   )}
                 </div>
                 {!isEditing && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteDialog(true);
-                    }}
-                  >
-                    <Trash className="h-4 w-4 text-red-500" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <ShareRecipeDialog recipe={recipe} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteDialog(true);
+                      }}
+                    >
+                      <Trash className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
