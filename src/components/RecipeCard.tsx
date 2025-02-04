@@ -20,7 +20,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -49,6 +48,7 @@ export function RecipeCard({
   const [imageUrl, setImageUrl] = useState(recipe.image_url || "");
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [useImageUrl, setUseImageUrl] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
 
   useEffect(() => {
     setEditedRecipe(recipe);
@@ -103,11 +103,19 @@ export function RecipeCard({
             {editedRecipe.title}
           </CardTitle>
           {editedRecipe.image_url && (
-            <img 
-              src={editedRecipe.image_url} 
-              alt={editedRecipe.title}
-              className="w-12 h-12 object-cover rounded-md"
-            />
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowImagePreview(true);
+              }}
+              className="cursor-pointer"
+            >
+              <img 
+                src={editedRecipe.image_url} 
+                alt={editedRecipe.title}
+                className="w-12 h-12 object-cover rounded-md hover:opacity-80 transition-opacity"
+              />
+            </div>
           )}
         </CardHeader>
         {isExpanded && (
@@ -123,7 +131,8 @@ export function RecipeCard({
                         ...editedRecipe,
                         ingredients: e.target.value
                       })}
-                      className="min-h-[100px] resize-none appearance-none"
+                      className="min-h-fit resize-none"
+                      style={{ height: 'auto' }}
                     />
                   </div>
                   <div>
@@ -134,7 +143,8 @@ export function RecipeCard({
                         ...editedRecipe,
                         description: e.target.value
                       })}
-                      className="min-h-[100px] resize-none appearance-none"
+                      className="min-h-fit resize-none"
+                      style={{ height: 'auto' }}
                     />
                   </div>
                   <div>
@@ -195,9 +205,6 @@ export function RecipeCard({
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Ajouter une image</DialogTitle>
-                          <DialogDescription>
-                            Choisissez comment ajouter votre image
-                          </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-4">
                           <Button
@@ -294,7 +301,7 @@ export function RecipeCard({
                       setShowDeleteDialog(true);
                     }}
                   >
-                    <Trash className="h-4 w-4" />
+                    <Trash className="h-4 w-4 text-red-500" />
                   </Button>
                 )}
               </div>
@@ -302,6 +309,21 @@ export function RecipeCard({
           </CardContent>
         )}
       </Card>
+
+      <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{editedRecipe.title}</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-full">
+            <img 
+              src={editedRecipe.image_url} 
+              alt={editedRecipe.title}
+              className="w-full h-auto object-contain rounded-lg"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
