@@ -47,12 +47,24 @@ export default function Index() {
   });
 
   const fetchRecipes = async () => {
+    console.log("Fetching recipes...");
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log("Current session:", session);
+
+    if (!session) {
+      console.log("No session found, redirecting to auth");
+      navigate("/auth");
+      return;
+    }
+
     const { data, error } = await supabase
       .from("recipes")
       .select("*")
+      .eq('user_id', session.user.id)
       .order('title', { ascending: true });
 
     if (error) {
+      console.error("Error fetching recipes:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les recettes",
@@ -61,6 +73,7 @@ export default function Index() {
       return;
     }
 
+    console.log("Recipes fetched:", data);
     setRecipes(data as Recipe[]);
   };
 
@@ -216,7 +229,23 @@ export default function Index() {
       .from('recipe-images')
       .getPublicUrl(filePath);
 
-    form.setValue("image_url", publicUrl);
+    // Update recipe with new image URL
+    const { error: updateError } = await supabase
+      .from('recipes')
+      .update({ image_url: publicUrl })
+      .eq('id', recipe.id);
+
+    if (updateError) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour l'image de la recette",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Refresh recipes
+    fetchRecipes();
   };
 
   const handleLogout = async () => {
@@ -434,19 +463,25 @@ export default function Index() {
             </div>
           ) : (
             <div className="grid gap-6">
-              {filteredRecipes.map((recipe) => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  isExpanded={expandedRecipeId === recipe.id}
-                  onClick={() => setExpandedRecipeId(
-                    expandedRecipeId === recipe.id ? null : recipe.id
-                  )}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onImageUpload={handleImageUpload}
-                />
-              ))}
+              {filteredRecipes.length === 0 ? (
+                <div className="text-center text-gray-500">
+                  Aucune recette trouvée
+                </div>
+              ) : (
+                filteredRecipes.map((recipe) => (
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    isExpanded={expandedRecipeId === recipe.id}
+                    onClick={() => setExpandedRecipeId(
+                      expandedRecipeId === recipe.id ? null : recipe.id
+                    )}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onImageUpload={handleImageUpload}
+                  />
+                ))
+              )}
             </div>
           )}
         </div>
