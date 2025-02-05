@@ -73,6 +73,7 @@
 
     <div id="toast" class="toast"></div>
 
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script>
         // Initialize Supabase client
         const supabaseClient = window.supabase;
@@ -92,7 +93,7 @@
             
             if (!session) {
                 console.log("No session found, redirecting to auth");
-                window.location.href = '/src/pages/Auth';
+                window.location.href = '/auth';
                 return;
             }
             
