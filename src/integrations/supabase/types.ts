@@ -9,41 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      recipe_shares: {
-        Row: {
-          created_at: string | null
-          from_user_id: string | null
-          id: string
-          recipe_id: string | null
-          status: string | null
-          to_user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          from_user_id?: string | null
-          id?: string
-          recipe_id?: string | null
-          status?: string | null
-          to_user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          from_user_id?: string | null
-          id?: string
-          recipe_id?: string | null
-          status?: string | null
-          to_user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recipe_shares_recipe_id_fkey"
-            columns: ["recipe_id"]
-            isOneToOne: false
-            referencedRelation: "recipes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       recipes: {
         Row: {
           category: string

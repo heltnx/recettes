@@ -20,7 +20,6 @@ const formSchema = z.object({
   description: z.string().min(1, "La description est requise"),
   category: z.string().min(1, "La catégorie est requise"),
   sub_category: z.string().optional(),
-  image_url: z.string().optional(),
 });
 
 export default function Index() {
@@ -42,29 +41,16 @@ export default function Index() {
       description: "",
       category: "",
       sub_category: "",
-      image_url: "",
     },
   });
 
   const fetchRecipes = async () => {
-    console.log("Fetching recipes...");
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log("Current session:", session);
-
-    if (!session) {
-      console.log("No session found, redirecting to auth");
-      navigate("/auth");
-      return;
-    }
-
     const { data, error } = await supabase
       .from("recipes")
       .select("*")
-      .eq('user_id', session.user.id)
       .order('title', { ascending: true });
 
     if (error) {
-      console.error("Error fetching recipes:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les recettes",
@@ -73,7 +59,6 @@ export default function Index() {
       return;
     }
 
-    console.log("Recipes fetched:", data);
     setRecipes(data as Recipe[]);
   };
 
@@ -208,7 +193,7 @@ export default function Index() {
     if (!session) return;
 
     const fileExt = file.name.split('.').pop();
-    const filePath = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `${recipe.id}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('recipe-images')
@@ -230,7 +215,7 @@ export default function Index() {
       .getPublicUrl(filePath);
 
     const { error: updateError } = await supabase
-      .from('recipes')
+      .from("recipes")
       .update({ image_url: publicUrl })
       .eq('id', recipe.id);
 
@@ -242,6 +227,11 @@ export default function Index() {
       });
       return;
     }
+
+    toast({
+      title: "Succès",
+      description: "L'image a été uploadée",
+    });
 
     fetchRecipes();
   };
@@ -336,12 +326,7 @@ export default function Index() {
                       <FormItem>
                         <FormLabel>Ingrédients</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
-                            placeholder="Un ingrédient par ligne"
-                            className="min-h-fit"
-                            style={{ height: 'auto' }}
-                          />
+                          <Textarea {...field} placeholder="Un ingrédient par ligne" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -355,12 +340,7 @@ export default function Index() {
                       <FormItem>
                         <FormLabel>Instructions</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
-                            placeholder="Les étapes de la recette"
-                            className="min-h-fit"
-                            style={{ height: 'auto' }}
-                          />
+                          <Textarea {...field} placeholder="Les étapes de la recette" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -421,38 +401,6 @@ export default function Index() {
                     />
                   )}
 
-                  <FormField
-                    control={form.control}
-                    name="image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Image</FormLabel>
-                        <FormControl>
-                          <div className="space-y-4">
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  handleImageUpload(editingRecipe || {} as Recipe, file);
-                                }
-                              }}
-                            />
-                            {field.value && (
-                              <img
-                                src={field.value}
-                                alt="Preview"
-                                className="w-32 h-32 object-cover rounded-md"
-                              />
-                            )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   <Button type="submit">
                     {editingRecipe ? "Modifier la recette" : "Ajouter la recette"}
                   </Button>
@@ -461,25 +409,19 @@ export default function Index() {
             </div>
           ) : (
             <div className="grid gap-6">
-              {filteredRecipes.length === 0 ? (
-                <div className="text-center text-gray-500">
-                  Aucune recette trouvée
-                </div>
-              ) : (
-                filteredRecipes.map((recipe) => (
-                  <RecipeCard
-                    key={recipe.id}
-                    recipe={recipe}
-                    isExpanded={expandedRecipeId === recipe.id}
-                    onClick={() => setExpandedRecipeId(
-                      expandedRecipeId === recipe.id ? null : recipe.id
-                    )}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onImageUpload={handleImageUpload}
-                  />
-                ))
-              )}
+              {filteredRecipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  isExpanded={expandedRecipeId === recipe.id}
+                  onClick={() => setExpandedRecipeId(
+                    expandedRecipeId === recipe.id ? null : recipe.id
+                  )}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onImageUpload={handleImageUpload}
+                />
+              ))}
             </div>
           )}
         </div>
