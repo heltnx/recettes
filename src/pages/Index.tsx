@@ -203,7 +203,7 @@ export default function Index() {
     fetchRecipes();
   };
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (recipe: Recipe, file: File) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -229,7 +229,6 @@ export default function Index() {
       .from('recipe-images')
       .getPublicUrl(filePath);
 
-    // Update recipe with new image URL
     const { error: updateError } = await supabase
       .from('recipes')
       .update({ image_url: publicUrl })
@@ -244,7 +243,6 @@ export default function Index() {
       return;
     }
 
-    // Refresh recipes
     fetchRecipes();
   };
 
@@ -437,7 +435,7 @@ export default function Index() {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  handleImageUpload(file);
+                                  handleImageUpload(editingRecipe || {} as Recipe, file);
                                 }
                               }}
                             />
