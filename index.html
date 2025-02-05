@@ -1,17 +1,647 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>savory-map</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-    <meta property="og:image" content="/og-image.png" />
-  </head>
+    <title>Mes Recettes</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
 
+      body {
+        background-color: rgb(249, 250, 251);
+      }
+
+      .container {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        width: 256px;
+        background-color: white;
+        border-right: 1px solid rgb(229, 231, 235);
+        padding: 1rem;
+      }
+
+      .logout-btn {
+        width: 100%;
+        padding: 0.5rem 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgb(229, 231, 235);
+        border-radius: 0.375rem;
+        background-color: white;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .logout-btn:hover {
+        background-color: rgb(249, 250, 251);
+      }
+
+      .category-list {
+        list-style: none;
+      }
+
+      .category-item {
+        padding: 0.5rem;
+        cursor: pointer;
+        border-radius: 0.375rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .category-item:hover,
+      .category-item.active {
+        background-color: rgb(243, 244, 246);
+      }
+
+      .main-content {
+        flex: 1;
+        padding: 2rem;
+        overflow-y: auto;
+      }
+
+      .header {
+        max-width: 896px;
+        margin: 0 auto 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .search-input {
+        padding: 0.5rem 1rem;
+        border: 1px solid rgb(229, 231, 235);
+        border-radius: 0.375rem;
+        width: 100%;
+        max-width: 384px;
+      }
+
+      .add-recipe-btn {
+        padding: 0.5rem 1rem;
+        background-color: rgb(79, 70, 229);
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .add-recipe-btn:hover {
+        background-color: rgb(67, 56, 202);
+      }
+
+      .recipes-grid {
+        max-width: 896px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .recipe-card {
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .recipe-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .recipe-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .recipe-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .recipe-btn {
+        padding: 0.5rem;
+        border: 1px solid rgb(229, 231, 235);
+        border-radius: 0.375rem;
+        background-color: white;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .recipe-btn:hover {
+        background-color: rgb(249, 250, 251);
+      }
+
+      .recipe-content {
+        display: none;
+      }
+
+      .recipe-content.expanded {
+        display: block;
+      }
+
+      .recipe-image {
+        width: 100%;
+        max-height: 200px;
+        object-fit: cover;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+      }
+
+      .recipe-section {
+        margin-bottom: 1rem;
+      }
+
+      .recipe-section-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        max-width: 512px;
+      }
+
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      .form-input,
+      .form-textarea,
+      .form-select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid rgb(229, 231, 235);
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: none;
+      }
+
+      .toast.success {
+        background-color: rgb(34, 197, 94);
+        color: white;
+      }
+
+      .toast.error {
+        background-color: rgb(239, 68, 68);
+        color: white;
+      }
+
+      .toast.active {
+        display: block;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+        }
+        to {
+          transform: translateX(0);
+        }
+      }
+
+      .share-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+      }
+
+      .share-modal.active {
+        display: flex;
+      }
+
+      .share-modal-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        max-width: 512px;
+      }
+    </style>
+  </head>
   <body>
-    <div id="root"></div>
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="container">
+      <aside class="sidebar">
+        <button class="logout-btn" onclick="handleLogout()">Se déconnecter</button>
+        <ul class="category-list">
+          <li class="category-item" data-category="all">Toutes les recettes</li>
+          <li class="category-item" data-category="Apéros">Apéros</li>
+          <li class="category-item" data-category="Entrées">Entrées</li>
+          <li class="category-item" data-category="Plats">Plats</li>
+          <li class="category-item" data-category="Salades">Salades</li>
+          <li class="category-item" data-category="Soupes">Soupes</li>
+          <li class="category-item" data-category="Desserts">Desserts</li>
+          <li class="category-item" data-category="Autres">Autres</li>
+        </ul>
+      </aside>
+      <main class="main-content">
+        <div class="header">
+          <input type="search" class="search-input" placeholder="Rechercher une recette...">
+          <button class="add-recipe-btn" onclick="toggleAddRecipeModal()">Ajouter une recette</button>
+        </div>
+        <div class="recipes-grid" id="recipesContainer"></div>
+      </main>
+    </div>
+
+    <!-- Modal d'ajout/édition de recette -->
+    <div class="modal" id="recipeModal">
+      <div class="modal-content">
+        <h2 id="modalTitle">Ajouter une recette</h2>
+        <form id="recipeForm">
+          <div class="form-group">
+            <label class="form-label">Titre</label>
+            <input type="text" class="form-input" id="titleInput" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ingrédients</label>
+            <textarea class="form-textarea" id="ingredientsInput" required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Instructions</label>
+            <textarea class="form-textarea" id="descriptionInput" required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catégorie</label>
+            <select class="form-select" id="categoryInput" required>
+              <option value="Apéros">Apéros</option>
+              <option value="Entrées">Entrées</option>
+              <option value="Plats">Plats</option>
+              <option value="Salades">Salades</option>
+              <option value="Soupes">Soupes</option>
+              <option value="Desserts">Desserts</option>
+              <option value="Autres">Autres</option>
+            </select>
+          </div>
+          <div class="form-group" id="subCategoryGroup" style="display: none;">
+            <label class="form-label">Sous-catégorie</label>
+            <select class="form-select" id="subCategoryInput">
+              <option value="Viande">Viande</option>
+              <option value="Volaille">Volaille</option>
+              <option value="Poisson">Poisson</option>
+              <option value="Crustacés">Crustacés</option>
+              <option value="Légumes">Légumes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Image</label>
+            <input type="file" class="form-input" id="imageInput" accept="image/*">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="add-recipe-btn">Enregistrer</button>
+            <button type="button" class="recipe-btn" onclick="toggleAddRecipeModal()">Annuler</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de partage -->
+    <div class="share-modal" id="shareModal">
+      <div class="share-modal-content">
+        <h2>Partager la recette</h2>
+        <div class="form-group">
+          <label class="form-label">Email du destinataire</label>
+          <input type="email" class="form-input" id="shareEmailInput" required>
+        </div>
+        <div class="form-actions">
+          <button class="add-recipe-btn" onclick="handleShare()">Partager</button>
+          <button class="recipe-btn" onclick="toggleShareModal()">Annuler</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      let currentUser = null;
+      let recipes = [];
+      let editingRecipe = null;
+      let selectedCategory = null;
+      let sharingRecipe = null;
+
+      // Initialisation
+      async function init() {
+        const session = await supabase.auth.getSession();
+        if (!session?.data?.session) {
+          window.location.href = '/auth';
+          return;
+        }
+        currentUser = session.data.session.user;
+        fetchRecipes();
+      }
+
+      // Gestion des recettes
+      async function fetchRecipes() {
+        const { data, error } = await supabase
+          .from('recipes')
+          .select('*')
+          .order('title', { ascending: true });
+
+        if (error) {
+          showToast('Erreur lors du chargement des recettes', 'error');
+          return;
+        }
+
+        recipes = data;
+        renderRecipes();
+      }
+
+      function renderRecipes() {
+        const container = document.getElementById('recipesContainer');
+        container.innerHTML = '';
+
+        const filteredRecipes = recipes.filter(recipe => {
+          const matchesCategory = !selectedCategory || recipe.category === selectedCategory;
+          const matchesSearch = recipe.title.toLowerCase().includes(
+            document.querySelector('.search-input').value.toLowerCase()
+          );
+          return matchesCategory && matchesSearch;
+        });
+
+        filteredRecipes.forEach(recipe => {
+          const card = createRecipeCard(recipe);
+          container.appendChild(card);
+        });
+      }
+
+      function createRecipeCard(recipe) {
+        const card = document.createElement('div');
+        card.className = 'recipe-card';
+        card.innerHTML = `
+          <div class="recipe-header">
+            <h3 class="recipe-title">${recipe.title}</h3>
+            <div class="recipe-actions">
+              <button class="recipe-btn" onclick="toggleRecipeContent('${recipe.id}')">
+                <span class="toggle-icon">▼</span>
+              </button>
+              <button class="recipe-btn" onclick="editRecipe('${recipe.id}')">✏️</button>
+              <button class="recipe-btn" onclick="deleteRecipe('${recipe.id}')">🗑️</button>
+              <button class="recipe-btn" onclick="showShareModal('${recipe.id}')">📤</button>
+            </div>
+          </div>
+          <div class="recipe-content" id="content-${recipe.id}">
+            ${recipe.image_url ? `<img src="${recipe.image_url}" class="recipe-image" alt="${recipe.title}">` : ''}
+            <div class="recipe-section">
+              <h4 class="recipe-section-title">Ingrédients</h4>
+              <p>${recipe.ingredients}</p>
+            </div>
+            <div class="recipe-section">
+              <h4 class="recipe-section-title">Instructions</h4>
+              <p>${recipe.description}</p>
+            </div>
+          </div>
+        `;
+        return card;
+      }
+
+      // Gestion des modales et des formulaires
+      function toggleAddRecipeModal() {
+        const modal = document.getElementById('recipeModal');
+        modal.classList.toggle('active');
+        if (!modal.classList.contains('active')) {
+          editingRecipe = null;
+          document.getElementById('recipeForm').reset();
+        }
+      }
+
+      function toggleShareModal() {
+        const modal = document.getElementById('shareModal');
+        modal.classList.toggle('active');
+        if (!modal.classList.contains('active')) {
+          sharingRecipe = null;
+          document.getElementById('shareEmailInput').value = '';
+        }
+      }
+
+      function showShareModal(recipeId) {
+        sharingRecipe = recipes.find(r => r.id === recipeId);
+        toggleShareModal();
+      }
+
+      async function handleShare() {
+        const email = document.getElementById('shareEmailInput').value;
+        if (!email || !sharingRecipe) return;
+
+        // Recherche de l'utilisateur par email
+        const { data: users, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .single();
+
+        if (userError || !users) {
+          showToast('Utilisateur non trouvé', 'error');
+          return;
+        }
+
+        // Création du partage
+        const { error: shareError } = await supabase
+          .from('recipe_shares')
+          .insert({
+            recipe_id: sharingRecipe.id,
+            from_user_id: currentUser.id,
+            to_user_id: users.id
+          });
+
+        if (shareError) {
+          showToast('Erreur lors du partage', 'error');
+          return;
+        }
+
+        showToast('Recette partagée avec succès', 'success');
+        toggleShareModal();
+      }
+
+      // Gestion des événements
+      document.getElementById('categoryInput').addEventListener('change', function(e) {
+        const subCategoryGroup = document.getElementById('subCategoryGroup');
+        subCategoryGroup.style.display = e.target.value === 'Plats' ? 'block' : 'none';
+      });
+
+      document.getElementById('recipeForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+          title: document.getElementById('titleInput').value,
+          ingredients: document.getElementById('ingredientsInput').value,
+          description: document.getElementById('descriptionInput').value,
+          category: document.getElementById('categoryInput').value,
+          sub_category: document.getElementById('categoryInput').value === 'Plats' 
+            ? document.getElementById('subCategoryInput').value 
+            : null
+        };
+
+        const imageFile = document.getElementById('imageInput').files[0];
+        if (imageFile) {
+          const imagePath = `${crypto.randomUUID()}.${imageFile.name.split('.').pop()}`;
+          const { error: uploadError } = await supabase.storage
+            .from('recipe-images')
+            .upload(imagePath, imageFile);
+
+          if (!uploadError) {
+            const { data } = supabase.storage
+              .from('recipe-images')
+              .getPublicUrl(imagePath);
+            formData.image_url = data.publicUrl;
+          }
+        }
+
+        if (editingRecipe) {
+          const { error } = await supabase
+            .from('recipes')
+            .update(formData)
+            .eq('id', editingRecipe.id);
+
+          if (error) {
+            showToast('Erreur lors de la modification', 'error');
+            return;
+          }
+          showToast('Recette modifiée avec succès', 'success');
+        } else {
+          const { error } = await supabase
+            .from('recipes')
+            .insert({ ...formData, user_id: currentUser.id });
+
+          if (error) {
+            showToast('Erreur lors de l\'ajout', 'error');
+            return;
+          }
+          showToast('Recette ajoutée avec succès', 'success');
+        }
+
+        toggleAddRecipeModal();
+        fetchRecipes();
+      });
+
+      // Utilitaires
+      function toggleRecipeContent(recipeId) {
+        const content = document.getElementById(`content-${recipeId}`);
+        content.classList.toggle('expanded');
+      }
+
+      function editRecipe(recipeId) {
+        editingRecipe = recipes.find(r => r.id === recipeId);
+        if (!editingRecipe) return;
+
+        document.getElementById('titleInput').value = editingRecipe.title;
+        document.getElementById('ingredientsInput').value = editingRecipe.ingredients;
+        document.getElementById('descriptionInput').value = editingRecipe.description;
+        document.getElementById('categoryInput').value = editingRecipe.category;
+        
+        if (editingRecipe.category === 'Plats') {
+          document.getElementById('subCategoryGroup').style.display = 'block';
+          document.getElementById('subCategoryInput').value = editingRecipe.sub_category || '';
+        }
+
+        document.getElementById('modalTitle').textContent = 'Modifier la recette';
+        toggleAddRecipeModal();
+      }
+
+      async function deleteRecipe(recipeId) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette recette ?')) return;
+
+        const { error } = await supabase
+          .from('recipes')
+          .delete()
+          .eq('id', recipeId);
+
+        if (error) {
+          showToast('Erreur lors de la suppression', 'error');
+          return;
+        }
+
+        showToast('Recette supprimée avec succès', 'success');
+        fetchRecipes();
+      }
+
+      async function handleLogout() {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          showToast('Erreur lors de la déconnexion', 'error');
+          return;
+        }
+        window.location.href = '/auth';
+      }
+
+      function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type} active`;
+        
+        setTimeout(() => {
+          toast.classList.remove('active');
+        }, 3000);
+      }
+
+      // Event listeners pour la recherche et le filtrage
+      document.querySelector('.search-input').addEventListener('input', renderRecipes);
+
+      document.querySelectorAll('.category-item').forEach(item => {
+        item.addEventListener('click', function() {
+          document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+          this.classList.add('active');
+          selectedCategory = this.dataset.category === 'all' ? null : this.dataset.category;
+          renderRecipes();
+        });
+      });
+
+      // Initialisation de l'application
+      init();
+    </script>
   </body>
 </html>
