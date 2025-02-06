@@ -1,5 +1,5 @@
-
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { RecipeCard } from "@/components/RecipeCard";
 import { Category, Recipe, SubCategory } from "@/types/recipe";
@@ -8,13 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Image, Link } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -36,6 +43,7 @@ export default function Index() {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [useImageUrl, setUseImageUrl] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -72,10 +80,32 @@ export default function Index() {
     fetchRecipes();
   }, []);
 
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth");
+      }
+    };
+    
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     const recipeData = {
       ...values,
-      user_id: "anonymous",
+      user_id: session.user.id,
     } as Recipe;
 
     if (editingRecipe) {
@@ -200,6 +230,17 @@ export default function Index() {
     }
   };
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de se déconnecter",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCategorySelect = (category: Category | null) => {
     setSelectedCategory(category);
     setSelectedSubCategory(null);
@@ -221,6 +262,11 @@ export default function Index() {
   return (
     <div className="flex h-screen bg-gray-50">
       <aside className="w-64 border-r bg-white">
+        <div className="p-4">
+          <Button onClick={handleLogout} variant="outline" className="w-full">
+            Se déconnecter
+          </Button>
+        </div>
         <Sidebar
           selectedCategory={selectedCategory}
           selectedSubCategory={selectedSubCategory}
