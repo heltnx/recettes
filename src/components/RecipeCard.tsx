@@ -1,3 +1,4 @@
+
 import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -99,9 +100,11 @@ export function RecipeCard({
           "cursor-pointer transition-all duration-300 hover:shadow-md",
           isExpanded && "ring-2 ring-recipe-300"
         )}
-        onClick={onClick}
       >
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardHeader 
+          className="pb-3 flex flex-row items-center justify-between"
+          onClick={onClick}
+        >
           <CardTitle className="text-lg font-medium" onClick={stopPropagation}>
             {editingTitle ? (
               <Input
@@ -155,193 +158,199 @@ export function RecipeCard({
           )}
         </CardHeader>
         <CardContent onClick={stopPropagation}>
-          <div className="space-y-4">
-            {isEditing ? (
-              <>
-                <div>
-                  <h4 className="font-medium mb-2">Ingrédients</h4>
-                  <Textarea
-                    value={editedRecipe.ingredients}
-                    onChange={(e) => setEditedRecipe({
-                      ...editedRecipe,
-                      ingredients: e.target.value
-                    })}
-                    className="min-h-[100px] resize-none appearance-none"
-                  />
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Préparation</h4>
-                  <Textarea
-                    value={editedRecipe.description}
-                    onChange={(e) => setEditedRecipe({
-                      ...editedRecipe,
-                      description: e.target.value
-                    })}
-                    className="min-h-[100px] resize-none appearance-none"
-                  />
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Catégorie</h4>
-                  <Select
-                    value={editedRecipe.category}
-                    onValueChange={(value) => setEditedRecipe({
-                      ...editedRecipe,
-                      category: value as Category,
-                      sub_category: value === "Plats" ? editedRecipe.sub_category : undefined
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner une catégorie" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Apéros">Apéros</SelectItem>
-                      <SelectItem value="Entrées">Entrées</SelectItem>
-                      <SelectItem value="Plats">Plats</SelectItem>
-                      <SelectItem value="Salades">Salades</SelectItem>
-                      <SelectItem value="Soupes">Soupes</SelectItem>
-                      <SelectItem value="Desserts">Desserts</SelectItem>
-                      <SelectItem value="Autres">Autres</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {editedRecipe.category === "Plats" && (
+          {isExpanded && (
+            <div className="space-y-4">
+              {isEditing ? (
+                <>
                   <div>
-                    <h4 className="font-medium mb-2">Sous-catégorie</h4>
+                    <h4 className="font-medium mb-2">Ingrédients</h4>
+                    <Textarea
+                      value={editedRecipe.ingredients}
+                      onChange={(e) => setEditedRecipe({
+                        ...editedRecipe,
+                        ingredients: e.target.value
+                      })}
+                      className="min-h-[100px] resize-none appearance-none"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Préparation</h4>
+                    <Textarea
+                      value={editedRecipe.description}
+                      onChange={(e) => setEditedRecipe({
+                        ...editedRecipe,
+                        description: e.target.value
+                      })}
+                      className="min-h-[100px] resize-none appearance-none"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Catégorie</h4>
                     <Select
-                      value={editedRecipe.sub_category || ""}
+                      value={editedRecipe.category}
                       onValueChange={(value) => setEditedRecipe({
                         ...editedRecipe,
-                        sub_category: value as SubCategory
+                        category: value as Category,
+                        sub_category: value === "Plats" ? editedRecipe.sub_category : undefined
                       })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner une sous-catégorie" />
+                        <SelectValue placeholder="Sélectionner une catégorie" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Viande">Viande</SelectItem>
-                        <SelectItem value="Volaille">Volaille</SelectItem>
-                        <SelectItem value="Poisson">Poisson</SelectItem>
-                        <SelectItem value="Crustacés">Crustacés</SelectItem>
-                        <SelectItem value="Légumes">Légumes</SelectItem>
+                        <SelectItem value="Apéros">Apéros</SelectItem>
+                        <SelectItem value="Entrées">Entrées</SelectItem>
+                        <SelectItem value="Plats">Plats</SelectItem>
+                        <SelectItem value="Salades">Salades</SelectItem>
+                        <SelectItem value="Soupes">Soupes</SelectItem>
+                        <SelectItem value="Desserts">Desserts</SelectItem>
+                        <SelectItem value="Autres">Autres</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                )}
-                <div>
-                  <h4 className="font-medium mb-2">Image</h4>
-                  <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="w-full">
-                        {editedRecipe.image_url ? "Modifier l'image" : "Ajouter une image"}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Ajouter une image</DialogTitle>
-                        <DialogDescription>
-                          Choisissez comment ajouter votre image
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="flex flex-col gap-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = 'image/*';
-                            input.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
-                            input.click();
-                          }}
-                        >
-                          <Image className="h-4 w-4 mr-2" />
-                          Télécharger une image
+                  {editedRecipe.category === "Plats" && (
+                    <div>
+                      <h4 className="font-medium mb-2">Sous-catégorie</h4>
+                      <Select
+                        value={editedRecipe.sub_category || ""}
+                        onValueChange={(value) => setEditedRecipe({
+                          ...editedRecipe,
+                          sub_category: value as SubCategory
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner une sous-catégorie" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Viande">Viande</SelectItem>
+                          <SelectItem value="Volaille">Volaille</SelectItem>
+                          <SelectItem value="Poisson">Poisson</SelectItem>
+                          <SelectItem value="Crustacés">Crustacés</SelectItem>
+                          <SelectItem value="Légumes">Légumes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-medium mb-2">Image</h4>
+                    <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full">
+                          {editedRecipe.image_url ? "Modifier l'image" : "Ajouter une image"}
                         </Button>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="url"
-                            placeholder="Lien de l'image"
-                            value={imageUrl}
-                            onChange={(e) => {
-                              setImageUrl(e.target.value);
-                              setUseImageUrl(true);
-                              setEditedRecipe({
-                                ...editedRecipe,
-                                image_url: e.target.value
-                              });
-                            }}
-                          />
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Ajouter une image</DialogTitle>
+                          <DialogDescription>
+                            Choisissez comment ajouter votre image
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex flex-col gap-4">
                           <Button
                             variant="outline"
                             onClick={() => {
-                              setEditedRecipe({
-                                ...editedRecipe,
-                                image_url: imageUrl
-                              });
-                              setShowImageDialog(false);
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.onchange = (e) => {
+                                if (e.target instanceof HTMLInputElement && e.target.files) {
+                                  handleImageUpload(e as unknown as React.ChangeEvent<HTMLInputElement>);
+                                }
+                              };
+                              input.click();
                             }}
                           >
-                            <Link className="h-4 w-4 mr-2" />
-                            Utiliser
+                            <Image className="h-4 w-4 mr-2" />
+                            Télécharger une image
                           </Button>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="url"
+                              placeholder="Lien de l'image"
+                              value={imageUrl}
+                              onChange={(e) => {
+                                setImageUrl(e.target.value);
+                                setUseImageUrl(true);
+                                setEditedRecipe({
+                                  ...editedRecipe,
+                                  image_url: e.target.value
+                                });
+                              }}
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setEditedRecipe({
+                                  ...editedRecipe,
+                                  image_url: imageUrl
+                                });
+                                setShowImageDialog(false);
+                              }}
+                            >
+                              <Link className="h-4 w-4 mr-2" />
+                              Utiliser
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <h4 className="font-medium mb-2">Ingrédients</h4>
-                  <p className="text-sm whitespace-pre-line">{editedRecipe.ingredients}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Préparation</h4>
-                  <p className="text-sm whitespace-pre-line">{editedRecipe.description}</p>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {editedRecipe.category} {editedRecipe.sub_category && `- ${editedRecipe.sub_category}`}
-                </div>
-              </>
-            )}
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit();
-                  }}
-                >
-                  {isEditing ? "Enregistrer" : "Modifier"}
-                </Button>
-                {isEditing && (
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <h4 className="font-medium mb-2">Ingrédients</h4>
+                    <p className="text-sm whitespace-pre-line">{editedRecipe.ingredients}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Préparation</h4>
+                    <p className="text-sm whitespace-pre-line">{editedRecipe.description}</p>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {editedRecipe.category} {editedRecipe.sub_category && `- ${editedRecipe.sub_category}`}
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between items-center">
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsEditing(false);
-                      setEditedRecipe(recipe);
+                      handleEdit();
                     }}
                   >
-                    Annuler
+                    {isEditing ? "Enregistrer" : "Modifier"}
+                  </Button>
+                  {isEditing && (
+                    <Button
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditing(false);
+                        setEditedRecipe(recipe);
+                      }}
+                    >
+                      Annuler
+                    </Button>
+                  )}
+                </div>
+                {!isEditing && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteDialog(true);
+                    }}
+                  >
+                    <Trash className="h-4 w-4 text-red-500" />
                   </Button>
                 )}
               </div>
-              {!isEditing && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteDialog(true);
-                  }}
-                >
-                  <Trash className="h-4 w-4 text-red-500" />
-                </Button>
-              )}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
