@@ -14,6 +14,14 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Image, Link } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -32,6 +40,9 @@ export default function Index() {
   const [isAddingRecipe, setIsAddingRecipe] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [useImageUrl, setUseImageUrl] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -191,52 +202,32 @@ export default function Index() {
     fetchRecipes();
   };
 
-  const handleImageUpload = async (recipe: Recipe, file: File) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${Date.now()}.${fileExt}`;
 
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${recipe.id}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('recipe-images')
+        .upload(filePath, file);
 
-    const { error: uploadError } = await supabase.storage
-      .from('recipe-images')
-      .upload(filePath, file, {
-        upsert: true
-      });
+      if (uploadError) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'uploader l'image",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (uploadError) {
-      toast({
-        title: "Erreur",
-        description: "Impossible d'uploader l'image",
-        variant: "destructive",
-      });
-      return;
+      const { data: { publicUrl } } = supabase.storage
+        .from('recipe-images')
+        .getPublicUrl(filePath);
+
+      form.setValue("image_url", publicUrl);
+      setShowImageDialog(false);
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('recipe-images')
-      .getPublicUrl(filePath);
-
-    const { error: updateError } = await supabase
-      .from("recipes")
-      .update({ image_url: publicUrl })
-      .eq('id', recipe.id);
-
-    if (updateError) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour l'image de la recette",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Succès",
-      description: "L'image a été uploadée",
-    });
-
-    fetchRecipes();
   };
 
   const handleLogout = async () => {
