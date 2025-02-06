@@ -1,17 +1,410 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>savory-map</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-    <meta property="og:image" content="/og-image.png" />
-  </head>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Recettes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
 
-  <body>
-    <div id="root"></div>
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+        body {
+            background-color: #f7f7f7;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            background-color: #333;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #555;
+        }
+
+        .btn-danger {
+            background-color: #dc2626;
+        }
+
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+
+        .recipes-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .recipe-card {
+            flex: 1 1 300px;
+            max-width: 400px;
+            background: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .recipe-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .recipe-content {
+            padding: 1rem;
+        }
+
+        .recipe-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        .recipe-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 0.25rem;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 80vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.75rem;
+            margin-right: 2rem;
+        }
+
+        .main-content {
+            display: flex;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Mes Recettes</h1>
+            <button class="btn" id="addRecipeBtn">Ajouter une recette</button>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <h2>Catégories</h2>
+                <div id="categories"></div>
+            </div>
+
+            <div class="recipes-grid" id="recipesGrid"></div>
+        </div>
+    </div>
+
+    <!-- Modal Ajouter/Éditer Recette -->
+    <div class="modal" id="recipeModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Ajouter une recette</h2>
+            <form id="recipeForm">
+                <div class="form-group">
+                    <label>Titre</label>
+                    <input type="text" id="recipeTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Ingrédients</label>
+                    <textarea id="recipeIngredients" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="recipeDescription" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Catégorie</label>
+                    <select id="recipeCategory" required>
+                        <option value="Apéros">Apéros</option>
+                        <option value="Entrées">Entrées</option>
+                        <option value="Plats">Plats</option>
+                        <option value="Salades">Salades</option>
+                        <option value="Soupes">Soupes</option>
+                        <option value="Desserts">Desserts</option>
+                        <option value="Autres">Autres</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Image</label>
+                    <input type="file" id="recipeImage" accept="image/*">
+                </div>
+                <div class="recipe-actions">
+                    <button type="button" class="btn" onclick="closeModal()">Annuler</button>
+                    <button type="submit" class="btn">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Image Preview -->
+    <div class="modal" id="imagePreviewModal">
+        <div class="modal-content">
+            <img id="previewImage" class="image-preview">
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://upcgshvgqubyenuibwhh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwY2dzaHZncXVieWVudWlid2hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk4MjU0NzUsImV4cCI6MjAyNTQwMTQ3NX0.Hm3wgGqxRwi_VQBGZGmQGxBQGtJbqBQFH7PJR0Ue9Hs';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUserId = localStorage.getItem('userId') || 'user_' + Date.now();
+        localStorage.setItem('userId', currentUserId);
+
+        // État de l'application
+        let recipes = [];
+        let selectedCategory = null;
+        let editingRecipeId = null;
+
+        // Gestionnaires d'événements
+        document.getElementById('addRecipeBtn').addEventListener('click', () => {
+            editingRecipeId = null;
+            document.getElementById('modalTitle').textContent = 'Ajouter une recette';
+            document.getElementById('recipeForm').reset();
+            openModal('recipeModal');
+        });
+
+        document.getElementById('recipeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                title: document.getElementById('recipeTitle').value,
+                ingredients: document.getElementById('recipeIngredients').value,
+                description: document.getElementById('recipeDescription').value,
+                category: document.getElementById('recipeCategory').value,
+                user_id: currentUserId
+            };
+
+            const imageFile = document.getElementById('recipeImage').files[0];
+            if (imageFile) {
+                const imageUrl = await uploadImage(imageFile);
+                if (imageUrl) {
+                    formData.image_url = imageUrl;
+                }
+            }
+
+            if (editingRecipeId) {
+                await updateRecipe(editingRecipeId, formData);
+            } else {
+                await createRecipe(formData);
+            }
+
+            closeModal();
+            fetchRecipes();
+        });
+
+        // Fonctions utilitaires
+        async function uploadImage(file) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}.${fileExt}`;
+            const { data, error } = await supabase.storage
+                .from('recipe-images')
+                .upload(fileName, file);
+
+            if (error) {
+                console.error('Erreur upload image:', error);
+                return null;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('recipe-images')
+                .getPublicUrl(fileName);
+
+            return publicUrl;
+        }
+
+        async function fetchRecipes() {
+            let query = supabase.from('recipes').select('*');
+            if (selectedCategory) {
+                query = query.eq('category', selectedCategory);
+            }
+            const { data, error } = await query;
+            if (error) {
+                console.error('Erreur récupération recettes:', error);
+                return;
+            }
+            recipes = data;
+            renderRecipes();
+        }
+
+        async function createRecipe(recipe) {
+            const { error } = await supabase.from('recipes').insert([recipe]);
+            if (error) console.error('Erreur création recette:', error);
+        }
+
+        async function updateRecipe(id, recipe) {
+            const { error } = await supabase
+                .from('recipes')
+                .update(recipe)
+                .eq('id', id);
+            if (error) console.error('Erreur mise à jour recette:', error);
+        }
+
+        async function deleteRecipe(id) {
+            const { error } = await supabase
+                .from('recipes')
+                .delete()
+                .eq('id', id);
+            if (error) console.error('Erreur suppression recette:', error);
+            fetchRecipes();
+        }
+
+        function renderRecipes() {
+            const grid = document.getElementById('recipesGrid');
+            grid.innerHTML = recipes.map(recipe => `
+                <div class="recipe-card">
+                    ${recipe.image_url ? `
+                        <img src="${recipe.image_url}" 
+                             class="recipe-image" 
+                             onclick="previewImage('${recipe.image_url}')"
+                             alt="${recipe.title}">
+                    ` : ''}
+                    <div class="recipe-content">
+                        <h3 class="recipe-title" onclick="editRecipe('${recipe.id}')">${recipe.title}</h3>
+                        <p>${recipe.description}</p>
+                        <div class="recipe-actions">
+                            <button class="btn" onclick="editRecipe('${recipe.id}')">Éditer</button>
+                            <button class="btn btn-danger" onclick="deleteRecipe('${recipe.id}')">Supprimer</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderCategories() {
+            const categories = ['Tout afficher', 'Apéros', 'Entrées', 'Plats', 'Salades', 'Soupes', 'Desserts', 'Autres'];
+            const container = document.getElementById('categories');
+            container.innerHTML = categories.map(category => `
+                <button class="btn" 
+                        onclick="filterByCategory('${category === 'Tout afficher' ? null : category}')"
+                        style="margin: 0.5rem; ${selectedCategory === category ? 'background-color: #555;' : ''}">
+                    ${category}
+                </button>
+            `).join('');
+        }
+
+        function filterByCategory(category) {
+            selectedCategory = category;
+            fetchRecipes();
+            renderCategories();
+        }
+
+        function editRecipe(id) {
+            const recipe = recipes.find(r => r.id === id);
+            if (!recipe) return;
+
+            editingRecipeId = id;
+            document.getElementById('modalTitle').textContent = 'Modifier la recette';
+            document.getElementById('recipeTitle').value = recipe.title;
+            document.getElementById('recipeIngredients').value = recipe.ingredients;
+            document.getElementById('recipeDescription').value = recipe.description;
+            document.getElementById('recipeCategory').value = recipe.category;
+            openModal('recipeModal');
+        }
+
+        function previewImage(url) {
+            document.getElementById('previewImage').src = url;
+            openModal('imagePreviewModal');
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('recipeModal').style.display = 'none';
+            document.getElementById('imagePreviewModal').style.display = 'none';
+        }
+
+        // Fermer les modales en cliquant en dehors
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                closeModal();
+            }
+        }
+
+        // Initialisation
+        renderCategories();
+        fetchRecipes();
+    </script>
+</body>
 </html>
