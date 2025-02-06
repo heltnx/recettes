@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Image, Link } from "lucide-react";
 
 const formSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -20,6 +21,7 @@ const formSchema = z.object({
   description: z.string().min(1, "La description est requise"),
   category: z.string().min(1, "La catégorie est requise"),
   sub_category: z.string().optional(),
+  image_url: z.string().optional(),
 });
 
 export default function Index() {
@@ -41,6 +43,7 @@ export default function Index() {
       description: "",
       category: "",
       sub_category: "",
+      image_url: "",
     },
   });
 
@@ -400,6 +403,80 @@ export default function Index() {
                       )}
                     />
                   )}
+
+                  <FormField
+                    control={form.control}
+                    name="image_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Image</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            {field.value && (
+                              <img 
+                                src={field.value} 
+                                alt="Preview" 
+                                className="w-32 h-32 object-cover rounded-md"
+                              />
+                            )}
+                            <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" className="w-full">
+                                  {field.value ? "Modifier l'image" : "Ajouter une image"}
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Ajouter une image</DialogTitle>
+                                  <DialogDescription>
+                                    Choisissez comment ajouter votre image
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex flex-col gap-4">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      const input = document.createElement('input');
+                                      input.type = 'file';
+                                      input.accept = 'image/*';
+                                      input.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
+                                      input.click();
+                                    }}
+                                  >
+                                    <Image className="h-4 w-4 mr-2" />
+                                    Télécharger une image
+                                  </Button>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="url"
+                                      placeholder="Lien de l'image"
+                                      value={imageUrl}
+                                      onChange={(e) => {
+                                        setImageUrl(e.target.value);
+                                        setUseImageUrl(true);
+                                        field.onChange(e.target.value);
+                                      }}
+                                    />
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => {
+                                        field.onChange(imageUrl);
+                                        setShowImageDialog(false);
+                                      }}
+                                    >
+                                      <Link className="h-4 w-4 mr-2" />
+                                      Utiliser
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <Button type="submit">
                     {editingRecipe ? "Modifier la recette" : "Ajouter la recette"}
