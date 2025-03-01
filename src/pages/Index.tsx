@@ -202,7 +202,7 @@ export default function Index() {
     fetchRecipes();
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const fileExt = file.name.split('.').pop();
@@ -228,6 +228,35 @@ export default function Index() {
       form.setValue("image_url", publicUrl);
       setShowImageDialog(false);
     }
+  };
+
+  const handleRecipeImageUpload = async (recipe: Recipe, file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('recipe-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'uploader l'image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('recipe-images')
+      .getPublicUrl(filePath);
+
+    const updatedRecipe = {
+      ...recipe,
+      image_url: publicUrl
+    };
+    
+    await handleEdit(updatedRecipe);
   };
 
   const handleLogout = async () => {
@@ -430,7 +459,35 @@ export default function Index() {
                                       const input = document.createElement('input');
                                       input.type = 'file';
                                       input.accept = 'image/*';
-                                      input.onchange = (e) => handleImageUpload(e as React.ChangeEvent<HTMLInputElement>);
+                                      input.onchange = (e) => {
+                                        const target = e.target as HTMLInputElement;
+                                        const file = target.files?.[0];
+                                        if (file) {
+                                          const fileExt = file.name.split('.').pop();
+                                          const filePath = `${Date.now()}.${fileExt}`;
+                                          
+                                          supabase.storage
+                                            .from('recipe-images')
+                                            .upload(filePath, file)
+                                            .then(({ data, error }) => {
+                                              if (error) {
+                                                toast({
+                                                  title: "Erreur",
+                                                  description: "Impossible d'uploader l'image",
+                                                  variant: "destructive",
+                                                });
+                                                return;
+                                              }
+                                              
+                                              const { data: { publicUrl } } = supabase.storage
+                                                .from('recipe-images')
+                                                .getPublicUrl(filePath);
+                                              
+                                              field.onChange(publicUrl);
+                                              setShowImageDialog(false);
+                                            });
+                                        }
+                                      };
                                       input.click();
                                     }}
                                   >
@@ -487,7 +544,7 @@ export default function Index() {
                   )}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
-                  onImageUpload={handleImageUpload}
+                  onImageUpload={handleRecipeImageUpload}
                 />
               ))}
             </div>

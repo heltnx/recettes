@@ -79,8 +79,7 @@ export function RecipeCard({
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (file: File) => {
     if (file) {
       await onImageUpload(recipe, file);
       setShowImageDialog(false);
@@ -254,8 +253,10 @@ export function RecipeCard({
                               input.type = 'file';
                               input.accept = 'image/*';
                               input.onchange = (e) => {
-                                if (e.target instanceof HTMLInputElement && e.target.files) {
-                                  handleImageUpload(e as unknown as React.ChangeEvent<HTMLInputElement>);
+                                const target = e.target as HTMLInputElement;
+                                const file = target.files?.[0];
+                                if (file) {
+                                  handleFileUpload(file);
                                 }
                               };
                               input.click();
