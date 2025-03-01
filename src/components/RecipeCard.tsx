@@ -1,3 +1,4 @@
+
 import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,10 +98,10 @@ export function RecipeCard({
         )}
       >
         <CardHeader 
-          className="pb-3 flex flex-row items-center justify-between"
+          className="pb-2 pt-2 flex flex-row items-center justify-between"
           onClick={onClick}
         >
-          <CardTitle className="text-lg font-medium">
+          <CardTitle className="text-[20px] font-medium">
             {isEditing ? (
               <Input
                 value={editedRecipe.title}
@@ -135,7 +136,7 @@ export function RecipeCard({
               {isEditing ? (
                 <>
                   <div>
-                    <h4 className="font-medium mb-2">Ingrédients</h4>
+                    <h4 className="font-bold mb-2">Ingrédients</h4>
                     <Textarea
                       value={editedRecipe.ingredients}
                       onChange={(e) => setEditedRecipe({
@@ -146,7 +147,7 @@ export function RecipeCard({
                     />
                   </div>
                   <div>
-                    <h4 className="font-medium mb-2">Préparation</h4>
+                    <h4 className="font-bold mb-2">Préparation</h4>
                     <Textarea
                       value={editedRecipe.description}
                       onChange={(e) => setEditedRecipe({
@@ -271,11 +272,11 @@ export function RecipeCard({
               ) : (
                 <>
                   <div>
-                    <h4 className="font-medium mb-2">Ingrédients</h4>
+                    <h4 className="font-bold mb-2">Ingrédients</h4>
                     <p className="text-sm whitespace-pre-line">{editedRecipe.ingredients}</p>
                   </div>
                   <div>
-                    <h4 className="font-medium mb-2">Préparation</h4>
+                    <h4 className="font-bold mb-2">Préparation</h4>
                     <p className="text-sm whitespace-pre-line">{editedRecipe.description}</p>
                   </div>
                   <div className="text-sm text-gray-500">
@@ -310,13 +311,13 @@ export function RecipeCard({
                 {!isEditing && (
                   <Button
                     variant="ghost"
-                    size="icon"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowDeleteDialog(true);
                     }}
+                    className="text-red-500"
                   >
-                    <Trash className="h-4 w-4 text-red-500" />
+                    Supprimer
                   </Button>
                 )}
               </div>
@@ -354,7 +355,7 @@ export function RecipeCard({
               onDelete(recipe);
               setShowDeleteDialog(false);
             }}>
-              <Trash className="h-4 w-4 text-red-500 mr-2" />
+              <Trash className="h-4 w-4 mr-2" />
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
