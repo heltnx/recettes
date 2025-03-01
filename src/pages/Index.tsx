@@ -59,9 +59,13 @@ export default function Index() {
   });
 
   const fetchRecipes = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    
     const { data, error } = await supabase
       .from("recipes")
       .select("*")
+      .eq('user_id', session.user.id)
       .order('title', { ascending: true });
 
     if (error) {
