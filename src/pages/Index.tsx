@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -264,11 +265,25 @@ export default function Index() {
   };
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Erreur lors de la déconnexion:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de se déconnecter",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Force navigation to auth page, even if the signOut didn't trigger the auth state change
+      navigate("/auth");
+    } catch (error) {
+      console.error("Exception lors de la déconnexion:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de se déconnecter",
+        description: "Une erreur est survenue lors de la déconnexion",
         variant: "destructive",
       });
     }
@@ -418,7 +433,7 @@ export default function Index() {
                               <SelectItem value="Viande">Viande</SelectItem>
                               <SelectItem value="Volaille">Volaille</SelectItem>
                               <SelectItem value="Poisson">Poisson</SelectItem>
-                              <SelectItem value="Crustacés">Crustacés</SelectItem>
+                              <SelectItem value="Fruits de mer">Fruits de mer</SelectItem>
                               <SelectItem value="Légumes">Légumes</SelectItem>
                             </SelectContent>
                           </Select>
