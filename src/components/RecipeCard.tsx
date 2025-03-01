@@ -1,4 +1,3 @@
-
 import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -198,7 +197,7 @@ export function RecipeCard({
                           <SelectItem value="Viande">Viande</SelectItem>
                           <SelectItem value="Volaille">Volaille</SelectItem>
                           <SelectItem value="Poisson">Poisson</SelectItem>
-                          <SelectItem value="Crustacés">Crustacés</SelectItem>
+                          <SelectItem value="Fruits de mer">Fruits de mer</SelectItem>
                           <SelectItem value="Légumes">Légumes</SelectItem>
                         </SelectContent>
                       </Select>

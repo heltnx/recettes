@@ -12,7 +12,7 @@ interface SidebarProps {
 const categories: { name: Category; subCategories?: SubCategory[] }[] = [
   { name: "Apéros" },
   { name: "Entrées" },
-  { name: "Plats", subCategories: ["Viande", "Volaille", "Poisson", "Crustacés", "Légumes"] },
+  { name: "Plats", subCategories: ["Viande", "Volaille", "Poisson", "Fruits de mer", "Légumes"] },
   { name: "Salades" },
   { name: "Soupes" },
   { name: "Desserts" },

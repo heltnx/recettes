@@ -1,3 +1,4 @@
+
 export type Category = 
   | "Apéros"
   | "Entrées"
@@ -11,7 +12,7 @@ export type SubCategory =
   | "Viande"
   | "Volaille"
   | "Poisson"
-  | "Crustacés"
+  | "Fruits de mer"
   | "Légumes";
 
 export interface Recipe {
