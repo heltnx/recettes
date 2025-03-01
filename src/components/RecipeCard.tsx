@@ -2,7 +2,7 @@
 import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Image, Link, Trash, Maximize2 } from "lucide-react";
+import { Image, Link, Trash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -21,7 +21,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -51,7 +50,6 @@ export function RecipeCard({
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [useImageUrl, setUseImageUrl] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
 
   useEffect(() => {
     setEditedRecipe(recipe);
@@ -72,7 +70,6 @@ export function RecipeCard({
       };
       onEdit(updatedRecipe);
       setIsEditing(false);
-      setEditingTitle(false);
     } else {
       setIsEditing(true);
       setImageUrl(recipe.image_url || "");
@@ -87,7 +84,7 @@ export function RecipeCard({
   };
 
   const stopPropagation = (e: React.MouseEvent) => {
-    if (isEditing || editingTitle) {
+    if (isEditing) {
       e.stopPropagation();
     }
   };
@@ -104,35 +101,19 @@ export function RecipeCard({
           className="pb-3 flex flex-row items-center justify-between"
           onClick={onClick}
         >
-          <CardTitle className="text-lg font-medium" onClick={stopPropagation}>
-            {editingTitle ? (
+          <CardTitle className="text-lg font-medium">
+            {isEditing ? (
               <Input
                 value={editedRecipe.title}
                 onChange={(e) => setEditedRecipe({
                   ...editedRecipe,
                   title: e.target.value
                 })}
-                onBlur={() => {
-                  setEditingTitle(false);
-                  onEdit(editedRecipe);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setEditingTitle(false);
-                    onEdit(editedRecipe);
-                  }
-                }}
+                onClick={stopPropagation}
                 autoFocus
               />
             ) : (
-              <div 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingTitle(true);
-                }}
-              >
-                {editedRecipe.title}
-              </div>
+              editedRecipe.title
             )}
           </CardTitle>
           {editedRecipe.image_url && (
@@ -141,13 +122,6 @@ export function RecipeCard({
                 src={editedRecipe.image_url} 
                 alt={editedRecipe.title}
                 className="w-12 h-12 object-cover rounded-md cursor-pointer hover:opacity-75 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowImagePreview(true);
-                }}
-              />
-              <Maximize2 
-                className="absolute bottom-0 right-0 w-4 h-4 text-white bg-black/50 rounded-full p-0.5"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowImagePreview(true);
@@ -241,9 +215,6 @@ export function RecipeCard({
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Ajouter une image</DialogTitle>
-                          <DialogDescription>
-                            Choisissez comment ajouter votre image
-                          </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-4">
                           <Button
