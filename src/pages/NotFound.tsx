@@ -1,8 +1,14 @@
-import { useLocation } from "react-router-dom";
+
+import { useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
+
+  // Handle the /shared route by redirecting to the SharedRecipes component
+  if (location.pathname === '/shared') {
+    return <Navigate to={`/shared${location.search}`} replace />;
+  }
 
   useEffect(() => {
     console.error(
