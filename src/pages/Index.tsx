@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Image, Link } from "lucide-react";
+import { Image, Link, Share2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +44,8 @@ export default function Index() {
   const [imageUrl, setImageUrl] = useState("");
   const [useImageUrl, setUseImageUrl] = useState(false);
   const [userDisplayName, setUserDisplayName] = useState("");
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareURL, setShareURL] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -310,6 +312,32 @@ export default function Index() {
     return matchesCategory && matchesSubCategory && matchesSearch;
   });
 
+  const generateShareLink = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    
+    const shareUrl = `${window.location.origin}/shared?user=${session.user.id}`;
+    setShareURL(shareUrl);
+    setShowShareDialog(true);
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareURL)
+      .then(() => {
+        toast({
+          title: "Lien copié",
+          description: "Le lien a été copié dans le presse-papier",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Erreur",
+          description: "Impossible de copier le lien",
+          variant: "destructive",
+        });
+      });
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       <aside className="w-64 border-r bg-white">
@@ -326,8 +354,20 @@ export default function Index() {
         />
       </aside>
       <main className="flex-1 overflow-y-auto">
-        <header className="bg-white border-b p-4 shadow-sm">
-          <h1 className="text-2xl font-bold">Les recettes de {userDisplayName}</h1>
+        <header className="bg-white border-b p-4 shadow-sm flex justify-between items-center">
+          <div className="flex-1"></div>
+          <h1 className="text-2xl font-bold text-center flex-1">Les recettes de {userDisplayName}</h1>
+          <div className="flex-1 flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={generateShareLink}
+              className="flex items-center gap-2"
+            >
+              <Share2 className="h-4 w-4" />
+              Partager
+            </Button>
+          </div>
         </header>
         <div className="p-8">
           <div className="max-w-4xl mx-auto">
@@ -578,6 +618,27 @@ export default function Index() {
           </div>
         </div>
       </main>
+
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Partager mes recettes</DialogTitle>
+            <DialogDescription>
+              Utilisez ce lien pour partager vos recettes en lecture seule
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2 mt-4">
+            <Input 
+              value={shareURL} 
+              readOnly 
+              className="flex-1"
+            />
+            <Button onClick={copyToClipboard} variant="outline">
+              Copier
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
