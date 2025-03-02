@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -44,6 +43,7 @@ export default function Index() {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [useImageUrl, setUseImageUrl] = useState(false);
+  const [userDisplayName, setUserDisplayName] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -62,6 +62,10 @@ export default function Index() {
   const fetchRecipes = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
+    
+    const email = session.user.email || "";
+    const username = email.split('@')[0];
+    setUserDisplayName(username);
     
     const { data, error } = await supabase
       .from("recipes")
@@ -277,7 +281,6 @@ export default function Index() {
         return;
       }
       
-      // Force navigation to auth page, even if the signOut didn't trigger the auth state change
       navigate("/auth");
     } catch (error) {
       console.error("Exception lors de la déconnexion:", error);
@@ -322,252 +325,257 @@ export default function Index() {
           onSelectSubCategory={handleSubCategorySelect}
         />
       </aside>
-      <main className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8 flex justify-between items-center">
-            <Input
-              type="search"
-              placeholder="Rechercher une recette..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md"
-            />
-            <Button onClick={() => {
-              setIsAddingRecipe(!isAddingRecipe);
-              if (!isAddingRecipe) {
-                setEditingRecipe(null);
-                form.reset();
-              }
-            }}>
-              {isAddingRecipe ? "Annuler" : "Ajouter une recette"}
-            </Button>
-          </div>
+      <main className="flex-1 overflow-y-auto">
+        <header className="bg-white border-b p-4 shadow-sm">
+          <h1 className="text-2xl font-bold">Les recettes de {userDisplayName}</h1>
+        </header>
+        <div className="p-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-8 flex justify-between items-center">
+              <Input
+                type="search"
+                placeholder="Rechercher une recette..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-md"
+              />
+              <Button onClick={() => {
+                setIsAddingRecipe(!isAddingRecipe);
+                if (!isAddingRecipe) {
+                  setEditingRecipe(null);
+                  form.reset();
+                }
+              }}>
+                {isAddingRecipe ? "Annuler" : "Ajouter une recette"}
+              </Button>
+            </div>
 
-          {isAddingRecipe ? (
-            <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Titre</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="ingredients"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ingrédients</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} placeholder="Un ingrédient par ligne" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Instructions</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} placeholder="Les étapes de la recette" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Catégorie</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner une catégorie" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Apéros">Apéros</SelectItem>
-                            <SelectItem value="Entrées">Entrées</SelectItem>
-                            <SelectItem value="Plats">Plats</SelectItem>
-                            <SelectItem value="Salades">Salades</SelectItem>
-                            <SelectItem value="Soupes">Soupes</SelectItem>
-                            <SelectItem value="Desserts">Desserts</SelectItem>
-                            <SelectItem value="Autres">Autres</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {form.watch("category") === "Plats" && (
+            {isAddingRecipe ? (
+              <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <FormField
                       control={form.control}
-                      name="sub_category"
+                      name="title"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Sous-catégorie</FormLabel>
+                          <FormLabel>Titre</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="ingredients"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ingrédients</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Un ingrédient par ligne" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Instructions</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Les étapes de la recette" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Catégorie</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner une sous-catégorie" />
+                                <SelectValue placeholder="Sélectionner une catégorie" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Viande">Viande</SelectItem>
-                              <SelectItem value="Volaille">Volaille</SelectItem>
-                              <SelectItem value="Poisson">Poisson</SelectItem>
-                              <SelectItem value="Fruits de mer">Fruits de mer</SelectItem>
-                              <SelectItem value="Légumes">Légumes</SelectItem>
+                              <SelectItem value="Apéros">Apéros</SelectItem>
+                              <SelectItem value="Entrées">Entrées</SelectItem>
+                              <SelectItem value="Plats">Plats</SelectItem>
+                              <SelectItem value="Salades">Salades</SelectItem>
+                              <SelectItem value="Soupes">Soupes</SelectItem>
+                              <SelectItem value="Desserts">Desserts</SelectItem>
+                              <SelectItem value="Autres">Autres</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  )}
 
-                  <FormField
-                    control={form.control}
-                    name="image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Image</FormLabel>
-                        <FormControl>
-                          <div className="space-y-2">
-                            {field.value && (
-                              <img 
-                                src={field.value} 
-                                alt="Preview" 
-                                className="w-32 h-32 object-cover rounded-md"
-                              />
-                            )}
-                            <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" className="w-full">
-                                  {field.value ? "Modifier l'image" : "Ajouter une image"}
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Ajouter une image</DialogTitle>
-                                  <DialogDescription>
-                                    Choisissez comment ajouter votre image
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="flex flex-col gap-4">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                      const input = document.createElement('input');
-                                      input.type = 'file';
-                                      input.accept = 'image/*';
-                                      input.onchange = (e) => {
-                                        const target = e.target as HTMLInputElement;
-                                        const file = target.files?.[0];
-                                        if (file) {
-                                          const fileExt = file.name.split('.').pop();
-                                          const filePath = `${Date.now()}.${fileExt}`;
-                                          
-                                          supabase.storage
-                                            .from('recipe-images')
-                                            .upload(filePath, file)
-                                            .then(({ data, error }) => {
-                                              if (error) {
-                                                toast({
-                                                  title: "Erreur",
-                                                  description: "Impossible d'uploader l'image",
-                                                  variant: "destructive",
-                                                });
-                                                return;
-                                              }
-                                              
-                                              const { data: { publicUrl } } = supabase.storage
-                                                .from('recipe-images')
-                                                .getPublicUrl(filePath);
-                                              
-                                              field.onChange(publicUrl);
-                                              setShowImageDialog(false);
-                                            });
-                                        }
-                                      };
-                                      input.click();
-                                    }}
-                                  >
-                                    <Image className="h-4 w-4 mr-2" />
-                                    Télécharger une image
+                    {form.watch("category") === "Plats" && (
+                      <FormField
+                        control={form.control}
+                        name="sub_category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sous-catégorie</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Sélectionner une sous-catégorie" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Viande">Viande</SelectItem>
+                                <SelectItem value="Volaille">Volaille</SelectItem>
+                                <SelectItem value="Poisson">Poisson</SelectItem>
+                                <SelectItem value="Fruits de mer">Fruits de mer</SelectItem>
+                                <SelectItem value="Légumes">Légumes</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    <FormField
+                      control={form.control}
+                      name="image_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Image</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              {field.value && (
+                                <img 
+                                  src={field.value} 
+                                  alt="Preview" 
+                                  className="w-32 h-32 object-cover rounded-md"
+                                />
+                              )}
+                              <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" className="w-full">
+                                    {field.value ? "Modifier l'image" : "Ajouter une image"}
                                   </Button>
-                                  <div className="flex items-center gap-2">
-                                    <Input
-                                      type="url"
-                                      placeholder="Lien de l'image"
-                                      value={imageUrl}
-                                      onChange={(e) => {
-                                        setImageUrl(e.target.value);
-                                        setUseImageUrl(true);
-                                        field.onChange(e.target.value);
-                                      }}
-                                    />
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Ajouter une image</DialogTitle>
+                                    <DialogDescription>
+                                      Choisissez comment ajouter votre image
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="flex flex-col gap-4">
                                     <Button
                                       variant="outline"
                                       onClick={() => {
-                                        field.onChange(imageUrl);
-                                        setShowImageDialog(false);
+                                        const input = document.createElement('input');
+                                        input.type = 'file';
+                                        input.accept = 'image/*';
+                                        input.onchange = (e) => {
+                                          const target = e.target as HTMLInputElement;
+                                          const file = target.files?.[0];
+                                          if (file) {
+                                            const fileExt = file.name.split('.').pop();
+                                            const filePath = `${Date.now()}.${fileExt}`;
+                                            
+                                            supabase.storage
+                                              .from('recipe-images')
+                                              .upload(filePath, file)
+                                              .then(({ data, error }) => {
+                                                if (error) {
+                                                  toast({
+                                                    title: "Erreur",
+                                                    description: "Impossible d'uploader l'image",
+                                                    variant: "destructive",
+                                                  });
+                                                  return;
+                                                }
+                                                
+                                                const { data: { publicUrl } } = supabase.storage
+                                                  .from('recipe-images')
+                                                  .getPublicUrl(filePath);
+                                                
+                                                field.onChange(publicUrl);
+                                                setShowImageDialog(false);
+                                              });
+                                          }
+                                        };
+                                        input.click();
                                       }}
                                     >
-                                      <Link className="h-4 w-4 mr-2" />
-                                      Utiliser
+                                      <Image className="h-4 w-4 mr-2" />
+                                      Télécharger une image
                                     </Button>
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        type="url"
+                                        placeholder="Lien de l'image"
+                                        value={imageUrl}
+                                        onChange={(e) => {
+                                          setImageUrl(e.target.value);
+                                          setUseImageUrl(true);
+                                          field.onChange(e.target.value);
+                                        }}
+                                      />
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                          field.onChange(imageUrl);
+                                          setShowImageDialog(false);
+                                        }}
+                                      >
+                                        <Link className="h-4 w-4 mr-2" />
+                                        Utiliser
+                                      </Button>
+                                    </div>
                                   </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                                </DialogContent>
+                              </Dialog>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <Button type="submit">
-                    {editingRecipe ? "Modifier la recette" : "Ajouter la recette"}
-                  </Button>
-                </form>
-              </Form>
-            </div>
-          ) : (
-            <div className="grid gap-6">
-              {filteredRecipes.map((recipe) => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  isExpanded={expandedRecipeId === recipe.id}
-                  onClick={() => setExpandedRecipeId(
-                    expandedRecipeId === recipe.id ? null : recipe.id
-                  )}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onImageUpload={handleRecipeImageUpload}
-                />
-              ))}
-            </div>
-          )}
+                    <Button type="submit">
+                      {editingRecipe ? "Modifier la recette" : "Ajouter la recette"}
+                    </Button>
+                  </form>
+                </Form>
+              </div>
+            ) : (
+              <div className="grid gap-6">
+                {filteredRecipes.map((recipe) => (
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    isExpanded={expandedRecipeId === recipe.id}
+                    onClick={() => setExpandedRecipeId(
+                      expandedRecipeId === recipe.id ? null : recipe.id
+                    )}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onImageUpload={handleRecipeImageUpload}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
