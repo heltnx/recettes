@@ -19,8 +19,8 @@ const SharedRecipes = () => {
     const fetchSharedRecipes = async () => {
       if (!userId) {
         toast({
-          title: "Error",
-          description: "No user ID found in the URL",
+          title: "Erreur",
+          description: "Aucun identifiant d'utilisateur trouvé dans l'URL",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -28,21 +28,6 @@ const SharedRecipes = () => {
       }
 
       try {
-        // Get user information to display name
-        const { data: userData, error: userError } = await supabase
-          .from("auth")
-          .select("email")
-          .eq("id", userId)
-          .single();
-
-        if (userError) {
-          console.error("Error fetching user:", userError);
-          // Try to fetch recipes even if we can't get the username
-        } else if (userData && userData.email) {
-          const username = userData.email.split('@')[0];
-          setUserDisplayName(username);
-        }
-
         // Get recipes for the shared user
         const { data, error } = await supabase
           .from("recipes")
@@ -53,20 +38,24 @@ const SharedRecipes = () => {
         if (error) {
           console.error("Error fetching shared recipes:", error);
           toast({
-            title: "Error",
-            description: "Could not load shared recipes",
+            title: "Erreur",
+            description: "Impossible de charger les recettes partagées",
             variant: "destructive",
           });
           setIsLoading(false);
           return;
         }
 
+        // For simplicity, we'll extract a display name from the userId
+        // This avoids needing to access the auth table which is problematic
+        setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
+        
         setRecipes(data as Recipe[]);
       } catch (error) {
         console.error("Exception when fetching recipes:", error);
         toast({
-          title: "Error",
-          description: "An error occurred while loading shared recipes",
+          title: "Erreur",
+          description: "Une erreur est survenue lors du chargement des recettes partagées",
           variant: "destructive",
         });
       } finally {
@@ -89,11 +78,11 @@ const SharedRecipes = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">No Recipes Found</h1>
+          <h1 className="text-2xl font-bold mb-4">Aucune recette trouvée</h1>
           <p className="text-gray-600">
             {userDisplayName 
-              ? `${userDisplayName} hasn't shared any recipes yet.` 
-              : "This user hasn't shared any recipes yet."}
+              ? `${userDisplayName} n'a pas encore partagé de recettes.` 
+              : "Cet utilisateur n'a pas encore partagé de recettes."}
           </p>
         </div>
       </div>
@@ -106,7 +95,7 @@ const SharedRecipes = () => {
         <h1 className="text-2xl font-bold text-center">
           {userDisplayName 
             ? `Les recettes de ${userDisplayName}` 
-            : "Shared Recipes"}
+            : "Recettes partagées"}
         </h1>
       </header>
 
@@ -117,7 +106,9 @@ const SharedRecipes = () => {
             selectedCategory={null}
             selectedSubCategory={null}
             searchQuery=""
-            isReadOnly={true}
+            onEdit={async () => {}} 
+            onDelete={async () => {}}
+            onImageUpload={async () => {}}
           />
         </div>
       </div>
