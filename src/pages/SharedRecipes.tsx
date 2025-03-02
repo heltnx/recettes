@@ -109,6 +109,7 @@ const SharedRecipes = () => {
             onEdit={async () => {}} 
             onDelete={async () => {}}
             onImageUpload={async () => {}}
+            isReadOnly={true}
           />
         </div>
       </div>

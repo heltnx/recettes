@@ -1,3 +1,4 @@
+
 import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ interface RecipeCardProps {
   onEdit: (recipe: Recipe) => void;
   onDelete: (recipe: Recipe) => void;
   onImageUpload: (recipe: Recipe, file: File) => Promise<void>;
+  isReadOnly?: boolean;
 }
 
 export function RecipeCard({ 
@@ -40,7 +42,8 @@ export function RecipeCard({
   onClick, 
   onEdit, 
   onDelete,
-  onImageUpload 
+  onImageUpload,
+  isReadOnly = false
 }: RecipeCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -283,43 +286,45 @@ export function RecipeCard({
                   </div>
                 </>
               )}
-              <div className="flex justify-between items-center">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit();
-                    }}
-                  >
-                    {isEditing ? "Enregistrer" : "Modifier"}
-                  </Button>
-                  {isEditing && (
+              {!isReadOnly && (
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsEditing(false);
-                        setEditedRecipe(recipe);
+                        handleEdit();
                       }}
                     >
-                      Annuler
+                      {isEditing ? "Enregistrer" : "Modifier"}
+                    </Button>
+                    {isEditing && (
+                      <Button
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsEditing(false);
+                          setEditedRecipe(recipe);
+                        }}
+                      >
+                        Annuler
+                      </Button>
+                    )}
+                  </div>
+                  {!isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteDialog(true);
+                      }}
+                    >
+                      <Trash className="h-4 w-4 text-red-500" />
                     </Button>
                   )}
                 </div>
-                {!isEditing && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteDialog(true);
-                    }}
-                  >
-                    <Trash className="h-4 w-4 text-red-500" />
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
           )}
         </CardContent>

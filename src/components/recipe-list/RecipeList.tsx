@@ -11,6 +11,7 @@ interface RecipeListProps {
   onEdit: (recipe: Recipe) => Promise<void>;
   onDelete: (recipe: Recipe) => Promise<void>;
   onImageUpload: (recipe: Recipe, file: File) => Promise<void>;
+  isReadOnly?: boolean;
 }
 
 export function RecipeList({ 
@@ -20,7 +21,8 @@ export function RecipeList({
   searchQuery,
   onEdit,
   onDelete,
-  onImageUpload
+  onImageUpload,
+  isReadOnly = false
 }: RecipeListProps) {
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
 
@@ -44,6 +46,7 @@ export function RecipeList({
           onEdit={onEdit}
           onDelete={onDelete}
           onImageUpload={onImageUpload}
+          isReadOnly={isReadOnly}
         />
       ))}
     </div>
