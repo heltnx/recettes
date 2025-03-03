@@ -35,10 +35,6 @@ const SharedRecipes = () => {
       }
 
       try {
-        // For display name, we'll use a formatted version of the user ID
-        // since we don't have a profiles table to get the email
-        setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
-        
         // Get recipes for the shared user
         const { data, error } = await supabase
           .from("recipes")
@@ -58,6 +54,13 @@ const SharedRecipes = () => {
         }
         
         setRecipes(data as Recipe[]);
+        
+        // Récupérer le nom partagé de la première recette (si disponible)
+        if (data && data.length > 0 && data[0].shared_by_name) {
+          setUserDisplayName(data[0].shared_by_name);
+        } else {
+          setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
+        }
       } catch (error) {
         console.error("Exception when fetching recipes:", error);
         toast({

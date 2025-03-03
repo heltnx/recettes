@@ -24,6 +24,7 @@ export interface Recipe {
   sub_category?: SubCategory;
   image_url?: string;
   user_id: string;
+  shared_by_name?: string;
   created_at?: string;
   updated_at?: string;
 }
