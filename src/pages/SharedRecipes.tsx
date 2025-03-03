@@ -1,11 +1,13 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Recipe } from "@/types/recipe";
+import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RecipeList } from "@/components/recipe-list/RecipeList";
 import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Sidebar } from "@/components/Sidebar";
 
 const SharedRecipes = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +16,11 @@ const SharedRecipes = () => {
   const [userDisplayName, setUserDisplayName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Add search and filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategory | null>(null);
 
   useEffect(() => {
     const fetchSharedRecipes = async () => {
@@ -45,10 +52,28 @@ const SharedRecipes = () => {
           setIsLoading(false);
           return;
         }
-
-        // For simplicity, we'll extract a display name from the userId
-        // This avoids needing to access the auth table which is problematic
-        setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
+        
+        // Get user info if possible to get their username/email for the title
+        try {
+          // We can't query auth.users directly, but we can set a better display name
+          // than just using the user ID by getting the first recipe's username
+          if (data && data.length > 0) {
+            // Check if the first recipe has a property we can use for the name
+            const firstRecipe = data[0];
+            if (firstRecipe.owner_name) {
+              setUserDisplayName(firstRecipe.owner_name);
+            } else {
+              // For simplicity, we'll extract a display name from the userId
+              setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
+            }
+          } else {
+            setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
+          }
+        } catch (userError) {
+          console.error("Error getting user info:", userError);
+          // Fallback to the ID-based name
+          setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
+        }
         
         setRecipes(data as Recipe[]);
       } catch (error) {
@@ -65,6 +90,16 @@ const SharedRecipes = () => {
 
     fetchSharedRecipes();
   }, [userId, toast]);
+
+  // Handle category and subcategory selection
+  const handleCategorySelect = (category: Category | null) => {
+    setSelectedCategory(category);
+    setSelectedSubCategory(null);
+  };
+
+  const handleSubCategorySelect = (subCategory: SubCategory | null) => {
+    setSelectedSubCategory(subCategory);
+  };
 
   if (isLoading) {
     return (
@@ -90,29 +125,48 @@ const SharedRecipes = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b p-4 shadow-sm">
-        <h1 className="text-2xl font-bold text-center">
-          {userDisplayName 
-            ? `Les recettes de ${userDisplayName}` 
-            : "Recettes partagées"}
-        </h1>
-      </header>
+    <div className="flex h-screen bg-gray-50">
+      <aside className="w-64 border-r bg-white">
+        <Sidebar
+          selectedCategory={selectedCategory}
+          selectedSubCategory={selectedSubCategory}
+          onSelectCategory={handleCategorySelect}
+          onSelectSubCategory={handleSubCategorySelect}
+        />
+      </aside>
 
-      <div className="p-8">
-        <div className="max-w-4xl mx-auto">
-          <RecipeList 
-            recipes={recipes}
-            selectedCategory={null}
-            selectedSubCategory={null}
-            searchQuery=""
-            onEdit={async () => {}} 
-            onDelete={async () => {}}
-            onImageUpload={async () => {}}
-            isReadOnly={true}
-          />
+      <main className="flex-1 overflow-y-auto">
+        <header className="bg-white border-b p-4 shadow-sm">
+          <h1 className="text-2xl font-bold text-center">
+            Les recettes de {userDisplayName}
+          </h1>
+        </header>
+
+        <div className="p-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-8 flex justify-between items-center">
+              <Input
+                type="search"
+                placeholder="Rechercher une recette..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
+
+            <RecipeList 
+              recipes={recipes}
+              selectedCategory={selectedCategory}
+              selectedSubCategory={selectedSubCategory}
+              searchQuery={searchQuery}
+              onEdit={async () => {}} 
+              onDelete={async () => {}}
+              onImageUpload={async () => {}}
+              isReadOnly={true}
+            />
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
