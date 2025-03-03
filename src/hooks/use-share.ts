@@ -8,20 +8,16 @@ export function useShare() {
   const [shareURL, setShareURL] = useState("");
   const { toast } = useToast();
 
-  const generateShareLink = async () => {
+  const generateShareLink = async (userDisplayName: string) => {
     // Récupérer la session de l'utilisateur
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     
-    // Demander le nom d'utilisateur pour le partage
-    const userName = prompt("Entrez votre nom pour le partage:", "");
-    if (!userName) return;
-
     try {
       // Mettre à jour toutes les recettes de l'utilisateur avec son nom
       const { error } = await supabase
         .from("recipes")
-        .update({ shared_by_name: userName })
+        .update({ shared_by_name: userDisplayName })
         .eq('user_id', session.user.id);
 
       if (error) {

@@ -51,7 +51,7 @@ export default function Index() {
       <main className="flex-1 overflow-y-auto">
         <AppHeader 
           username={userDisplayName} 
-          onShare={generateShareLink}
+          onShare={() => generateShareLink(userDisplayName)}
           onLogout={handleLogout}
         />
 
