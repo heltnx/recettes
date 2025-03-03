@@ -58,14 +58,8 @@ const SharedRecipes = () => {
           // We can't query auth.users directly, but we can set a better display name
           // than just using the user ID by getting the first recipe's username
           if (data && data.length > 0) {
-            // Check if the first recipe has a property we can use for the name
-            const firstRecipe = data[0];
-            if (firstRecipe.owner_name) {
-              setUserDisplayName(firstRecipe.owner_name);
-            } else {
-              // For simplicity, we'll extract a display name from the userId
-              setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
-            }
+            // For simplicity, we'll extract a display name from the userId
+            setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
           } else {
             setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
           }
@@ -162,7 +156,6 @@ const SharedRecipes = () => {
               onEdit={async () => {}} 
               onDelete={async () => {}}
               onImageUpload={async () => {}}
-              isReadOnly={true}
             />
           </div>
         </div>
