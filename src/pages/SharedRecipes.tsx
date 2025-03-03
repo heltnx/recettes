@@ -35,6 +35,22 @@ const SharedRecipes = () => {
       }
 
       try {
+        // Try to get user information first to set the display name
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', userId)
+          .single();
+          
+        if (!userError && userData && userData.email) {
+          // Extract username from email (part before @)
+          const username = userData.email.split('@')[0];
+          setUserDisplayName(username);
+        } else {
+          // Fallback in case we can't access the user's email
+          setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
+        }
+        
         // Get recipes for the shared user
         const { data, error } = await supabase
           .from("recipes")
@@ -51,22 +67,6 @@ const SharedRecipes = () => {
           });
           setIsLoading(false);
           return;
-        }
-        
-        // Get user info if possible to get their username/email for the title
-        try {
-          // We can't query auth.users directly, but we can set a better display name
-          // than just using the user ID by getting the first recipe's username
-          if (data && data.length > 0) {
-            // For simplicity, we'll extract a display name from the userId
-            setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
-          } else {
-            setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
-          }
-        } catch (userError) {
-          console.error("Error getting user info:", userError);
-          // Fallback to the ID-based name
-          setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
         }
         
         setRecipes(data as Recipe[]);
@@ -156,6 +156,7 @@ const SharedRecipes = () => {
               onEdit={async () => {}} 
               onDelete={async () => {}}
               onImageUpload={async () => {}}
+              isReadOnly={true}
             />
           </div>
         </div>
