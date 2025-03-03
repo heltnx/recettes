@@ -52,6 +52,7 @@ export type Database = {
           id: string
           image_url: string | null
           ingredients: string
+          shared_by_name: string | null
           sub_category: string | null
           title: string
           updated_at: string
@@ -64,6 +65,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           ingredients: string
+          shared_by_name?: string | null
           sub_category?: string | null
           title: string
           updated_at?: string
@@ -76,6 +78,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           ingredients?: string
+          shared_by_name?: string | null
           sub_category?: string | null
           title?: string
           updated_at?: string

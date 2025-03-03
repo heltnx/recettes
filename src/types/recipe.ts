@@ -26,4 +26,5 @@ export interface Recipe {
   user_id: string;
   created_at?: string;
   updated_at?: string;
+  shared_by_name?: string;
 }
