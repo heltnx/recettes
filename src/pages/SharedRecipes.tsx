@@ -35,21 +35,9 @@ const SharedRecipes = () => {
       }
 
       try {
-        // Try to get user information first to set the display name
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('id', userId)
-          .single();
-          
-        if (!userError && userData && userData.email) {
-          // Extract username from email (part before @)
-          const username = userData.email.split('@')[0];
-          setUserDisplayName(username);
-        } else {
-          // Fallback in case we can't access the user's email
-          setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
-        }
+        // For display name, we'll use a formatted version of the user ID
+        // since we don't have a profiles table to get the email
+        setUserDisplayName(`Utilisateur ${userId.substring(0, 6)}`);
         
         // Get recipes for the shared user
         const { data, error } = await supabase
