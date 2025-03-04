@@ -52,75 +52,43 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
         return;
       }
 
-      // Rechercher l'utilisateur destinataire par email en utilisant la méthode compatible
-      const { data: userList, error: userError } = await supabase.auth.admin.listUsers()
-        .catch(() => ({ data: null, error: new Error("Impossible d'accéder à la liste des utilisateurs") }));
+      // Rechercher directement l'utilisateur destinataire dans la table des recettes
+      // Cette approche fonctionne car l'email est utilisé comme user_id dans le système
+      const { data: userData, error: userError } = await supabase
+        .from("recipes")
+        .select("user_id")
+        .eq("user_id", email)
+        .limit(1);
 
-      // Trouver l'utilisateur avec l'email correspondant si userList est disponible
-      const userFound = userList?.users?.find(user => user.email === email);
+      if (userError || !userData || userData.length === 0) {
+        toast({
+          title: "Utilisateur non trouvé",
+          description: "Cette adresse email n'est pas associée à un compte",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
-      if (userError || !userFound) {
-        // Essayons une approche alternative - rechercher dans les recettes
-        const { data: recipes, error: recipesError } = await supabase
-          .from("recipes")
-          .select("user_id")
-          .eq("user_id", email)
-          .limit(1);
+      // L'utilisateur existe, on peut partager la recette
+      const { error: shareError } = await supabase
+        .from("recipe_shares")
+        .insert({
+          recipe_id: recipe.id,
+          from_user_id: session.user.id,
+          to_user_id: userData[0].user_id,
+          status: "pending"
+        });
 
-        if (recipesError || !recipes || recipes.length === 0) {
-          toast({
-            title: "Utilisateur non trouvé",
-            description: "Cette adresse email n'est pas associée à un compte",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        // Créer un enregistrement de partage
-        const { error: shareError } = await supabase
-          .from("recipe_shares")
-          .insert({
-            recipe_id: recipe.id,
-            from_user_id: session.user.id,
-            to_user_id: recipes[0].user_id,
-            status: "pending"
-          });
-
-        if (shareError) {
-          console.error("Erreur lors du partage:", shareError);
-          toast({
-            title: "Erreur",
-            description: "Impossible de partager la recette",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-      } else {
-        // L'utilisateur existe dans auth.users
-        const toUserId = userFound.id;
-
-        // Créer un enregistrement de partage
-        const { error: shareError } = await supabase
-          .from("recipe_shares")
-          .insert({
-            recipe_id: recipe.id,
-            from_user_id: session.user.id,
-            to_user_id: toUserId,
-            status: "pending"
-          });
-
-        if (shareError) {
-          console.error("Erreur lors du partage:", shareError);
-          toast({
-            title: "Erreur",
-            description: "Impossible de partager la recette",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
+      if (shareError) {
+        console.error("Erreur lors du partage:", shareError);
+        toast({
+          title: "Erreur",
+          description: "Impossible de partager la recette",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
       }
 
       toast({
