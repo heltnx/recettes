@@ -1,4 +1,3 @@
-
 import { Recipe, Category, SubCategory } from "@/types/recipe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { RecipeShareDialog } from "@/components/RecipeShareDialog";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -309,6 +309,9 @@ export function RecipeCard({
                       >
                         Annuler
                       </Button>
+                    )}
+                    {!isEditing && (
+                      <RecipeShareDialog recipe={recipe} />
                     )}
                   </div>
                   {!isEditing && (
