@@ -40,23 +40,6 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
     setIsLoading(true);
 
     try {
-      // Vérifier si l'utilisateur existe
-      const { data: userData, error: userError } = await supabase
-        .from("auth")
-        .select("id")
-        .eq("email", email)
-        .single();
-
-      if (userError) {
-        toast({
-          title: "Utilisateur non trouvé",
-          description: "Cette adresse email n'est pas associée à un compte",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
       // Obtenir l'utilisateur actuellement connecté
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -69,25 +52,76 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
         return;
       }
 
-      // Créer un enregistrement de partage
-      const { error: shareError } = await supabase
-        .from("recipe_shares")
-        .insert({
-          recipe_id: recipe.id,
-          from_user_id: session.user.id,
-          to_user_id: userData.id,
-          status: "pending"
-        });
+      // Rechercher l'utilisateur destinataire par email
+      const { data: users, error: userError } = await supabase.auth.admin.listUsers({
+        filter: {
+          email: email
+        }
+      }).catch(() => ({ data: null, error: new Error("Utilisateur non trouvé") }));
 
-      if (shareError) {
-        console.error("Erreur lors du partage:", shareError);
-        toast({
-          title: "Erreur",
-          description: "Impossible de partager la recette",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      // Si l'utilisateur n'existe pas ou si on ne peut pas accéder à la liste des utilisateurs
+      if (userError || !users || users.length === 0) {
+        // Essayons une approche alternative - rechercher dans les profils
+        const { data: profiles, error: profilesError } = await supabase
+          .from("recipes")
+          .select("user_id")
+          .eq("user_id", email)
+          .limit(1);
+
+        if (profilesError || !profiles || profiles.length === 0) {
+          toast({
+            title: "Utilisateur non trouvé",
+            description: "Cette adresse email n'est pas associée à un compte",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Créer un enregistrement de partage
+        const { error: shareError } = await supabase
+          .from("recipe_shares")
+          .insert({
+            recipe_id: recipe.id,
+            from_user_id: session.user.id,
+            to_user_id: profiles[0].user_id,
+            status: "pending"
+          });
+
+        if (shareError) {
+          console.error("Erreur lors du partage:", shareError);
+          toast({
+            title: "Erreur",
+            description: "Impossible de partager la recette",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // L'utilisateur existe dans auth.users
+        const toUserId = users[0].id;
+
+        // Créer un enregistrement de partage
+        const { error: shareError } = await supabase
+          .from("recipe_shares")
+          .insert({
+            recipe_id: recipe.id,
+            from_user_id: session.user.id,
+            to_user_id: toUserId,
+            status: "pending"
+          });
+
+        if (shareError) {
+          console.error("Erreur lors du partage:", shareError);
+          toast({
+            title: "Erreur",
+            description: "Impossible de partager la recette",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
       }
 
       toast({
