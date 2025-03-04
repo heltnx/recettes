@@ -52,23 +52,22 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
         return;
       }
 
-      // Rechercher l'utilisateur destinataire par email
-      const { data: users, error: userError } = await supabase.auth.admin.listUsers({
-        filter: {
-          email: email
-        }
-      }).catch(() => ({ data: null, error: new Error("Utilisateur non trouvé") }));
+      // Rechercher l'utilisateur destinataire par email en utilisant la méthode compatible
+      const { data: userList, error: userError } = await supabase.auth.admin.listUsers()
+        .catch(() => ({ data: null, error: new Error("Impossible d'accéder à la liste des utilisateurs") }));
 
-      // Si l'utilisateur n'existe pas ou si on ne peut pas accéder à la liste des utilisateurs
-      if (userError || !users || users.length === 0) {
-        // Essayons une approche alternative - rechercher dans les profils
-        const { data: profiles, error: profilesError } = await supabase
+      // Trouver l'utilisateur avec l'email correspondant si userList est disponible
+      const userFound = userList?.users?.find(user => user.email === email);
+
+      if (userError || !userFound) {
+        // Essayons une approche alternative - rechercher dans les recettes
+        const { data: recipes, error: recipesError } = await supabase
           .from("recipes")
           .select("user_id")
           .eq("user_id", email)
           .limit(1);
 
-        if (profilesError || !profiles || profiles.length === 0) {
+        if (recipesError || !recipes || recipes.length === 0) {
           toast({
             title: "Utilisateur non trouvé",
             description: "Cette adresse email n'est pas associée à un compte",
@@ -84,7 +83,7 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
           .insert({
             recipe_id: recipe.id,
             from_user_id: session.user.id,
-            to_user_id: profiles[0].user_id,
+            to_user_id: recipes[0].user_id,
             status: "pending"
           });
 
@@ -100,7 +99,7 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
         }
       } else {
         // L'utilisateur existe dans auth.users
-        const toUserId = users[0].id;
+        const toUserId = userFound.id;
 
         // Créer un enregistrement de partage
         const { error: shareError } = await supabase
