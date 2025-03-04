@@ -9,12 +9,25 @@ export function useAuth() {
   const { toast } = useToast();
 
   const checkSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    } catch (error) {
+      console.error("Error checking session:", error);
+      return null;
+    }
   };
 
   const handleLogout = async () => {
     try {
+      // Vérifier d'abord si une session existe pour éviter les erreurs
+      const session = await checkSession();
+      if (!session) {
+        // Si pas de session, rediriger directement vers la page d'auth
+        navigate("/auth");
+        return;
+      }
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Erreur lors de la déconnexion:", error);
@@ -29,18 +42,20 @@ export function useAuth() {
       navigate("/auth");
     } catch (error) {
       console.error("Exception lors de la déconnexion:", error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la déconnexion",
-        variant: "destructive",
-      });
+      // En cas d'erreur, rediriger quand même vers la page d'auth
+      navigate("/auth");
     }
   };
 
   useEffect(() => {
     const checkUser = async () => {
-      const session = await checkSession();
-      if (!session) {
+      try {
+        const session = await checkSession();
+        if (!session) {
+          navigate("/auth");
+        }
+      } catch (error) {
+        console.error("Error in checkUser:", error);
         navigate("/auth");
       }
     };

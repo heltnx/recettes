@@ -40,7 +40,7 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
     setIsLoading(true);
 
     try {
-      // Obtenir l'utilisateur actuellement connecté
+      // Vérifier si l'utilisateur actuel est connecté
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast({
@@ -52,31 +52,14 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
         return;
       }
 
-      // Rechercher directement l'utilisateur destinataire dans la table des recettes
-      // Cette approche fonctionne car l'email est utilisé comme user_id dans le système
-      const { data: userData, error: userError } = await supabase
-        .from("recipes")
-        .select("user_id")
-        .eq("user_id", email)
-        .limit(1);
-
-      if (userError || !userData || userData.length === 0) {
-        toast({
-          title: "Utilisateur non trouvé",
-          description: "Cette adresse email n'est pas associée à un compte",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // L'utilisateur existe, on peut partager la recette
+      // Créer directement le partage sans vérifier l'existence de l'utilisateur destinataire
+      // Cela simplifie le processus et évite les problèmes d'autorisations
       const { error: shareError } = await supabase
         .from("recipe_shares")
         .insert({
           recipe_id: recipe.id,
           from_user_id: session.user.id,
-          to_user_id: userData[0].user_id,
+          to_user_id: email, // Utiliser directement l'email comme identifiant
           status: "pending"
         });
 
