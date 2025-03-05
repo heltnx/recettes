@@ -8,9 +8,10 @@ export interface RecipeShare {
   id: string;
   recipe_id: string;
   from_user_id: string;
-  to_user_id: string;
+  to_user_id: string | null;
   status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
+  recipient_email: string | null;
   recipe?: Recipe;
 }
 
@@ -30,8 +31,8 @@ export function useRecipeShares() {
     }
 
     try {
-      // Récupérer les partages en attente pour l'utilisateur connecté
-      const { data: shares, error } = await supabase
+      // Fetch shares that have to_user_id matching our user ID
+      const { data: directShares, error: directError } = await supabase
         .from("recipe_shares")
         .select(`
           *,
@@ -41,13 +42,40 @@ export function useRecipeShares() {
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Erreur lors de la récupération des partages:", error);
-        throw error;
+      if (directError) {
+        console.error("Erreur lors de la récupération des partages directs:", directError);
+        throw directError;
       }
 
-      setIncomingShares(shares as RecipeShare[]);
-      setHasNewShares(shares.length > 0);
+      // Fetch shares that have our email as recipient_email but to_user_id is null
+      const { data: userEmail } = await supabase.auth.getUser();
+      if (!userEmail?.user?.email) {
+        setIncomingShares(directShares as RecipeShare[]);
+        setHasNewShares(directShares.length > 0);
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: emailShares, error: emailError } = await supabase
+        .from("recipe_shares")
+        .select(`
+          *,
+          recipe:recipes(*)
+        `)
+        .eq("recipient_email", userEmail.user.email)
+        .eq("status", "pending")
+        .is("to_user_id", null)
+        .order("created_at", { ascending: false });
+
+      if (emailError) {
+        console.error("Erreur lors de la récupération des partages par email:", emailError);
+        throw emailError;
+      }
+
+      // Combine both types of shares
+      const allShares = [...directShares, ...emailShares];
+      setIncomingShares(allShares as RecipeShare[]);
+      setHasNewShares(allShares.length > 0);
     } catch (error) {
       toast({
         title: "Erreur",
@@ -81,12 +109,25 @@ export function useRecipeShares() {
     }
 
     try {
-      // Créer une copie de la recette pour l'utilisateur
+      // Update the share to link it with current user if it wasn't already
+      if (!share.to_user_id) {
+        const { error: updateShareError } = await supabase
+          .from("recipe_shares")
+          .update({ to_user_id: session.user.id })
+          .eq("id", share.id);
+
+        if (updateShareError) {
+          console.error("Erreur lors de la mise à jour du partage:", updateShareError);
+          throw updateShareError;
+        }
+      }
+
+      // Create a copy of the recipe for the user
       const { error: recipeError } = await supabase
         .from("recipes")
         .insert({
           ...share.recipe,
-          id: undefined, // Pour générer un nouvel ID
+          id: undefined, // To generate a new ID
           user_id: session.user.id,
           shared_by_name: share.recipe.shared_by_name
         });
@@ -96,7 +137,7 @@ export function useRecipeShares() {
         throw recipeError;
       }
 
-      // Mettre à jour le statut du partage
+      // Update share status
       const { error: shareError } = await supabase
         .from("recipe_shares")
         .update({ status: "accepted" })
@@ -112,7 +153,7 @@ export function useRecipeShares() {
         description: "La recette a été ajoutée à votre collection",
       });
 
-      // Rafraîchir la liste des partages
+      // Refresh shares list
       fetchIncomingShares();
     } catch (error) {
       toast({
@@ -154,7 +195,7 @@ export function useRecipeShares() {
   useEffect(() => {
     fetchIncomingShares();
 
-    // Abonnement aux modifications de la table recipe_shares
+    // Subscribe to changes in the recipe_shares table
     const sharesSubscription = supabase
       .channel('recipe_shares_changes')
       .on(
