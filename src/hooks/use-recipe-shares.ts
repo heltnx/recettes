@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -122,22 +121,7 @@ export function useRecipeShares() {
         }
       }
 
-      // Create a copy of the recipe for the user
-      const { error: recipeError } = await supabase
-        .from("recipes")
-        .insert({
-          ...share.recipe,
-          id: undefined, // To generate a new ID
-          user_id: session.user.id,
-          shared_by_name: share.recipe.shared_by_name
-        });
-
-      if (recipeError) {
-        console.error("Erreur lors de la copie de la recette:", recipeError);
-        throw recipeError;
-      }
-
-      // Update share status
+      // Update share status to accepted - BUT don't create a copy of the recipe
       const { error: shareError } = await supabase
         .from("recipe_shares")
         .update({ status: "accepted" })
@@ -150,7 +134,7 @@ export function useRecipeShares() {
 
       toast({
         title: "Succès",
-        description: "La recette a été ajoutée à votre collection",
+        description: "La recette a été ajoutée à votre collection partagée",
       });
 
       // Refresh shares list

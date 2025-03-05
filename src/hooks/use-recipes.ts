@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Recipe } from "@/types/recipe";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,24 +21,55 @@ export function useRecipes() {
     const username = email.split('@')[0];
     setUserDisplayName(username);
     
-    const { data, error } = await supabase
-      .from("recipes")
-      .select("*")
-      .eq('user_id', session.user.id)
-      .order('title', { ascending: true });
+    try {
+      // Fetch user's own recipes
+      const { data: ownRecipes, error: ownError } = await supabase
+        .from("recipes")
+        .select("*")
+        .eq('user_id', session.user.id)
+        .order('title', { ascending: true });
 
-    if (error) {
+      if (ownError) {
+        console.error("Erreur lors du chargement des recettes personnelles:", ownError);
+        throw ownError;
+      }
+
+      // Fetch recipes shared with user and accepted
+      const { data: sharedRecipes, error: sharedError } = await supabase
+        .from("recipe_shares")
+        .select(`
+          *,
+          recipe:recipes(*)
+        `)
+        .eq("to_user_id", session.user.id)
+        .eq("status", "accepted");
+
+      if (sharedError) {
+        console.error("Erreur lors du chargement des recettes partagées:", sharedError);
+        throw sharedError;
+      }
+
+      // Extract recipes from shared recipes and mark them as shared
+      const formattedSharedRecipes = sharedRecipes.map(share => {
+        if (!share.recipe) return null;
+        
+        return {
+          ...share.recipe,
+          shared_by_name: "Partagée", // We can add the name of the sharer if needed
+        };
+      }).filter(Boolean) as Recipe[];
+
+      // Combine user's own recipes with shared recipes
+      setRecipes([...ownRecipes, ...formattedSharedRecipes]);
+      setIsLoading(false);
+    } catch (error) {
       toast({
         title: "Erreur",
         description: "Impossible de charger les recettes",
         variant: "destructive",
       });
       setIsLoading(false);
-      return;
     }
-
-    setRecipes(data as Recipe[]);
-    setIsLoading(false);
   };
 
   const handleEdit = async (recipe: Recipe) => {
