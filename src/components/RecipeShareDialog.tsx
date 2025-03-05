@@ -52,6 +52,8 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
         return;
       }
 
+      console.log("Tentative de partage avec l'email:", email);
+
       // Créer directement le partage sans vérifier l'existence de l'utilisateur
       const { error: shareError } = await supabase
         .from("recipe_shares")

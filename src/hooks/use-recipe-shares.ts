@@ -31,6 +31,18 @@ export function useRecipeShares() {
     }
 
     try {
+      // Récupérer l'email de l'utilisateur actuel
+      const { data: userEmail } = await supabase.auth.getUser();
+      const email = userEmail?.user?.email;
+
+      if (!email) {
+        console.error("Impossible de récupérer l'email de l'utilisateur");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Recherche de partages pour l'utilisateur:", session.user.id, "et email:", email);
+
       // Fetch shares that have to_user_id matching our user ID
       const { data: directShares, error: directError } = await supabase
         .from("recipe_shares")
@@ -47,22 +59,16 @@ export function useRecipeShares() {
         throw directError;
       }
 
-      // Fetch shares that have our email as recipient_email but to_user_id is null
-      const { data: userEmail } = await supabase.auth.getUser();
-      if (!userEmail?.user?.email) {
-        setIncomingShares(directShares as RecipeShare[]);
-        setHasNewShares(directShares.length > 0);
-        setIsLoading(false);
-        return;
-      }
+      console.log("Partages directs trouvés:", directShares.length);
 
+      // Fetch shares that have our email as recipient_email but to_user_id is null
       const { data: emailShares, error: emailError } = await supabase
         .from("recipe_shares")
         .select(`
           *,
           recipe:recipes(*)
         `)
-        .eq("recipient_email", userEmail.user.email)
+        .eq("recipient_email", email)
         .eq("status", "pending")
         .is("to_user_id", null)
         .order("created_at", { ascending: false });
@@ -72,11 +78,16 @@ export function useRecipeShares() {
         throw emailError;
       }
 
+      console.log("Partages par email trouvés:", emailShares.length);
+
       // Combine both types of shares
       const allShares = [...directShares, ...emailShares];
+      console.log("Total des partages en attente:", allShares.length);
+      
       setIncomingShares(allShares as RecipeShare[]);
       setHasNewShares(allShares.length > 0);
     } catch (error) {
+      console.error("Erreur complète:", error);
       toast({
         title: "Erreur",
         description: "Impossible de récupérer les partages de recettes",
@@ -156,6 +167,7 @@ export function useRecipeShares() {
       // Refresh shares list
       fetchIncomingShares();
     } catch (error) {
+      console.error("Erreur complète lors de l'acceptation:", error);
       toast({
         title: "Erreur",
         description: "Impossible d'accepter la recette partagée",
@@ -184,6 +196,7 @@ export function useRecipeShares() {
       // Rafraîchir la liste des partages
       fetchIncomingShares();
     } catch (error) {
+      console.error("Erreur complète lors du rejet:", error);
       toast({
         title: "Erreur",
         description: "Impossible de refuser la recette partagée",
@@ -206,6 +219,7 @@ export function useRecipeShares() {
           table: 'recipe_shares',
         },
         (payload) => {
+          console.log("Notification en temps réel reçue:", payload);
           fetchIncomingShares();
         }
       )

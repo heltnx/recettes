@@ -22,15 +22,20 @@ export function ShareNotifications() {
     hasNewShares, 
     clearNewSharesFlag,
     acceptShare,
-    rejectShare 
+    rejectShare,
+    fetchIncomingShares
   } = useRecipeShares();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       clearNewSharesFlag();
+      // Recharger les partages quand on ouvre la boîte de dialogue
+      fetchIncomingShares();
     }
-  }, [isOpen, clearNewSharesFlag]);
+  }, [isOpen, clearNewSharesFlag, fetchIncomingShares]);
+
+  console.log("ShareNotifications - incomingShares:", incomingShares.length, "hasNewShares:", hasNewShares);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
