@@ -15,6 +15,7 @@ export type Database = {
           from_user_id: string | null
           id: string
           recipe_id: string | null
+          recipient_email: string | null
           status: string | null
           to_user_id: string | null
         }
@@ -23,6 +24,7 @@ export type Database = {
           from_user_id?: string | null
           id?: string
           recipe_id?: string | null
+          recipient_email?: string | null
           status?: string | null
           to_user_id?: string | null
         }
@@ -31,6 +33,7 @@ export type Database = {
           from_user_id?: string | null
           id?: string
           recipe_id?: string | null
+          recipient_email?: string | null
           status?: string | null
           to_user_id?: string | null
         }

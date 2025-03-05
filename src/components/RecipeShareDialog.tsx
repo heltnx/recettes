@@ -52,33 +52,15 @@ export function RecipeShareDialog({ recipe, onShareSuccess }: RecipeShareDialogP
         return;
       }
 
-      // Rechercher l'utilisateur par email pour obtenir son UUID
-      const { data: userData, error: userError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email)
-        .maybeSingle();
-
-      let toUserId;
-      
-      if (userError || !userData) {
-        // Si l'utilisateur n'existe pas encore, on crée un enregistrement de partage temporaire
-        // qui sera récupéré quand l'utilisateur s'inscrira
-        console.log("Utilisateur non trouvé, stockage temporaire du partage");
-        toUserId = email; // Stocker l'email temporairement
-      } else {
-        toUserId = userData.id;
-      }
-
-      // Créer le partage avec l'identifiant approprié
+      // Créer directement le partage sans vérifier l'existence de l'utilisateur
       const { error: shareError } = await supabase
         .from("recipe_shares")
         .insert({
           recipe_id: recipe.id,
           from_user_id: session.user.id,
-          to_user_id: toUserId,
+          to_user_id: null, // On laisse ce champ null jusqu'à ce que l'utilisateur accepte la recette
           status: "pending",
-          recipient_email: email // Stocker l'email pour pouvoir retrouver le partage plus tard
+          recipient_email: email // Stocker l'email pour retrouver le partage plus tard
         });
 
       if (shareError) {
