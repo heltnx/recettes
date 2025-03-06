@@ -30,6 +30,8 @@ export function useRecipeShares() {
     }
 
     try {
+      console.log("Vérification des partages pour l'email:", session.user.email);
+      
       // Simplification : on ne cherche que par email
       const { data: shares, error } = await supabase
         .from("recipe_shares")
@@ -47,30 +49,31 @@ export function useRecipeShares() {
 
       console.log("Partages trouvés:", shares?.length || 0);
       
-      // Conversion explicite du statut et du type de catégorie
+      // Vérifier que les partages existent et les convertir avec des types corrects
       const typedShares: RecipeShare[] = shares?.map(share => {
-        // Assurons-nous que le statut est valide
-        const validStatus = ['pending', 'accepted', 'rejected'].includes(share.status as string) 
-          ? (share.status as 'pending' | 'accepted' | 'rejected')
+        const validStatus = (share.status === 'pending' || 
+                            share.status === 'accepted' || 
+                            share.status === 'rejected') 
+          ? share.status as 'pending' | 'accepted' | 'rejected'
           : 'pending';
           
-        // Si la recette existe, assurons-nous que la catégorie est valide
         let typedRecipe = undefined;
         if (share.recipe) {
+          // Assurons-nous que la catégorie est valide
           const validCategory = [
             "Apéros", "Entrées", "Plats", "Salades", 
             "Desserts", "Soupes", "Autres"
           ].includes(share.recipe.category) 
-            ? (share.recipe.category as Category) 
+            ? share.recipe.category as Category 
             : "Autres";
             
-          // Même chose pour la sous-catégorie si elle existe
+          // Vérification de la sous-catégorie
           const validSubCategory = share.recipe.sub_category 
             ? ([
                 "Viande", "Volaille", "Poisson", 
                 "Fruits de mer", "Légumes"
               ].includes(share.recipe.sub_category)
-                ? (share.recipe.sub_category as SubCategory)
+                ? share.recipe.sub_category as SubCategory
                 : undefined)
             : undefined;
             
@@ -173,16 +176,16 @@ export function useRecipeShares() {
     }
   };
 
+  // Chargement initial des partages
   useEffect(() => {
     fetchIncomingShares().catch(error => {
       console.error("Erreur lors du chargement initial des partages:", error);
     });
 
-    // Simplification : au lieu d'utiliser des abonnements temps réel qui peuvent surcharger le plan gratuit,
-    // on utilise un refresh périodique toutes les 30 secondes
+    // Rafraîchissement périodique toutes les 30 secondes
     const intervalId = setInterval(() => {
       fetchIncomingShares().catch(console.error);
-    }, 30000); // 30 secondes
+    }, 30000);
 
     return () => {
       clearInterval(intervalId);
