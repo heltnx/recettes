@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Recipe } from "@/types/recipe";
+import { Recipe, Category, SubCategory } from "@/types/recipe";
 
 export interface RecipeShare {
   id: string;
@@ -47,11 +47,46 @@ export function useRecipeShares() {
 
       console.log("Partages trouvés:", shares?.length || 0);
       
-      // Conversion explicite du statut pour s'assurer qu'il correspond au type attendu
-      const typedShares = shares?.map(share => ({
-        ...share,
-        status: share.status as 'pending' | 'accepted' | 'rejected'
-      })) || [];
+      // Conversion explicite du statut et du type de catégorie
+      const typedShares: RecipeShare[] = shares?.map(share => {
+        // Assurons-nous que le statut est valide
+        const validStatus = ['pending', 'accepted', 'rejected'].includes(share.status as string) 
+          ? (share.status as 'pending' | 'accepted' | 'rejected')
+          : 'pending';
+          
+        // Si la recette existe, assurons-nous que la catégorie est valide
+        let typedRecipe = undefined;
+        if (share.recipe) {
+          const validCategory = [
+            "Apéros", "Entrées", "Plats", "Salades", 
+            "Desserts", "Soupes", "Autres"
+          ].includes(share.recipe.category) 
+            ? (share.recipe.category as Category) 
+            : "Autres";
+            
+          // Même chose pour la sous-catégorie si elle existe
+          const validSubCategory = share.recipe.sub_category 
+            ? ([
+                "Viande", "Volaille", "Poisson", 
+                "Fruits de mer", "Légumes"
+              ].includes(share.recipe.sub_category)
+                ? (share.recipe.sub_category as SubCategory)
+                : undefined)
+            : undefined;
+            
+          typedRecipe = {
+            ...share.recipe,
+            category: validCategory,
+            sub_category: validSubCategory
+          };
+        }
+        
+        return {
+          ...share,
+          status: validStatus,
+          recipe: typedRecipe
+        } as RecipeShare;
+      }) || [];
       
       setIncomingShares(typedShares);
       setHasNewShares(typedShares.length > 0);
@@ -143,25 +178,14 @@ export function useRecipeShares() {
       console.error("Erreur lors du chargement initial des partages:", error);
     });
 
-    // On simplifie la souscription aux changements
-    const sharesSubscription = supabase
-      .channel('recipe_shares_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'recipe_shares',
-        },
-        () => {
-          console.log("Changement détecté dans les partages");
-          fetchIncomingShares().catch(console.error);
-        }
-      )
-      .subscribe();
+    // Simplification : au lieu d'utiliser des abonnements temps réel qui peuvent surcharger le plan gratuit,
+    // on utilise un refresh périodique toutes les 30 secondes
+    const intervalId = setInterval(() => {
+      fetchIncomingShares().catch(console.error);
+    }, 30000); // 30 secondes
 
     return () => {
-      sharesSubscription.unsubscribe();
+      clearInterval(intervalId);
     };
   }, [fetchIncomingShares]);
 

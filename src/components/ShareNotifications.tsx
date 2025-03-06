@@ -28,25 +28,40 @@ export function ShareNotifications() {
   } = useRecipeShares();
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
     if (isOpen) {
       clearNewSharesFlag();
       setError(null);
       
-      // Ajouter un délai pour éviter trop de requêtes
-      timeoutId = setTimeout(() => {
-        fetchIncomingShares().catch(err => {
-          console.error("Erreur lors du chargement des partages:", err);
-          setError("Impossible de charger les partages de recettes");
-        });
+      // Ajouter un délai pour éviter de surcharger Supabase sur le plan gratuit
+      const timeoutId = setTimeout(() => {
+        setIsRefreshing(true);
+        fetchIncomingShares()
+          .then(() => setIsRefreshing(false))
+          .catch(err => {
+            console.error("Erreur lors du chargement des partages:", err);
+            setError("Impossible de charger les partages de recettes");
+            setIsRefreshing(false);
+          });
       }, 500);
+      
+      return () => clearTimeout(timeoutId);
     }
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
   }, [isOpen, clearNewSharesFlag, fetchIncomingShares]);
+
+  const handleRefresh = () => {
+    setError(null);
+    setIsRefreshing(true);
+    fetchIncomingShares()
+      .then(() => setIsRefreshing(false))
+      .catch(err => {
+        console.error("Erreur lors du rafraîchissement des partages:", err);
+        setError("Impossible de rafraîchir les partages");
+        setIsRefreshing(false);
+      });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -74,7 +89,7 @@ export function ShareNotifications() {
               <AlertTitle>Erreur</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          ) : isLoading ? (
+          ) : isLoading || isRefreshing ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
               <p className="text-sm text-muted-foreground">
@@ -127,14 +142,11 @@ export function ShareNotifications() {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setError(null);
-              fetchIncomingShares();
-            }}
-            disabled={isLoading}
+            onClick={handleRefresh}
+            disabled={isLoading || isRefreshing}
             className="flex items-center gap-1"
           >
-            <Loader2 className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+            <Loader2 className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
             Actualiser
           </Button>
           <Button variant="outline" onClick={() => setIsOpen(false)}>
