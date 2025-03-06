@@ -8,6 +8,7 @@ import { RecipeForm } from "@/components/recipe-form/RecipeForm";
 import { RecipeList } from "@/components/recipe-list/RecipeList";
 import { AppHeader } from "@/components/app-header/AppHeader";
 import { ShareDialog } from "@/components/share/ShareDialog";
+import { ImportRecipeDialog } from "@/components/ImportRecipeDialog";
 import { useRecipes } from "@/hooks/use-recipes";
 import { useShare } from "@/hooks/use-share";
 import { useAuth } from "@/hooks/use-auth";
@@ -58,13 +59,16 @@ export default function Index() {
         <div className="p-8">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8 flex justify-between items-center">
-              <Input
-                type="search"
-                placeholder="Rechercher une recette..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-md"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="search"
+                  placeholder="Rechercher une recette..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="max-w-md"
+                />
+                <ImportRecipeDialog onImportSuccess={fetchRecipes} />
+              </div>
               <Button onClick={() => {
                 setIsAddingRecipe(!isAddingRecipe);
                 if (!isAddingRecipe) {

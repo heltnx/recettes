@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Recipe, Category, SubCategory } from "@/types/recipe";
@@ -11,194 +11,149 @@ export interface RecipeShare {
   recipient_email: string | null;
   status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
+  share_code?: string | null;
   recipe?: Recipe;
 }
 
 export function useRecipeShares() {
-  const [incomingShares, setIncomingShares] = useState<RecipeShare[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasNewShares, setHasNewShares] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [shareCodeInput, setShareCodeInput] = useState("");
   const { toast } = useToast();
 
-  const fetchIncomingShares = useCallback(async () => {
-    setIsLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user?.email) {
-      setIsLoading(false);
-      return [];
-    }
-
-    try {
-      console.log("Vérification des partages pour l'email:", session.user.email);
-      
-      // Simplification : on ne cherche que par email
-      const { data: shares, error } = await supabase
-        .from("recipe_shares")
-        .select(`
-          *,
-          recipe:recipes(*)
-        `)
-        .eq("recipient_email", session.user.email)
-        .eq("status", "pending");
-
-      if (error) {
-        console.error("Erreur lors de la récupération des partages:", error);
-        throw error;
-      }
-
-      console.log("Partages trouvés:", shares?.length || 0);
-      
-      // Vérifier que les partages existent et les convertir avec des types corrects
-      const typedShares: RecipeShare[] = shares?.map(share => {
-        const validStatus = (share.status === 'pending' || 
-                            share.status === 'accepted' || 
-                            share.status === 'rejected') 
-          ? share.status as 'pending' | 'accepted' | 'rejected'
-          : 'pending';
-          
-        let typedRecipe = undefined;
-        if (share.recipe) {
-          // Assurons-nous que la catégorie est valide
-          const validCategory = [
-            "Apéros", "Entrées", "Plats", "Salades", 
-            "Desserts", "Soupes", "Autres"
-          ].includes(share.recipe.category) 
-            ? share.recipe.category as Category 
-            : "Autres";
-            
-          // Vérification de la sous-catégorie
-          const validSubCategory = share.recipe.sub_category 
-            ? ([
-                "Viande", "Volaille", "Poisson", 
-                "Fruits de mer", "Légumes"
-              ].includes(share.recipe.sub_category)
-                ? share.recipe.sub_category as SubCategory
-                : undefined)
-            : undefined;
-            
-          typedRecipe = {
-            ...share.recipe,
-            category: validCategory,
-            sub_category: validSubCategory
-          };
-        }
-        
-        return {
-          ...share,
-          status: validStatus,
-          recipe: typedRecipe
-        } as RecipeShare;
-      }) || [];
-      
-      setIncomingShares(typedShares);
-      setHasNewShares(typedShares.length > 0);
-      setIsLoading(false);
-      return typedShares;
-    } catch (error) {
-      console.error("Erreur complète:", error);
-      setIsLoading(false);
-      throw error;
-    }
-  }, []);
-
-  const acceptShare = async (share: RecipeShare) => {
-    if (!share.recipe) {
+  const importRecipeByCode = useCallback(async (shareCode: string) => {
+    if (!shareCode.trim()) {
       toast({
         title: "Erreur",
-        description: "Impossible de trouver la recette partagée",
+        description: "Veuillez entrer un code de partage",
         variant: "destructive",
       });
       return;
     }
 
+    setIsLoading(true);
+
     try {
+      // Vérifier que l'utilisateur est connecté
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Erreur",
+          description: "Vous devez être connecté pour importer une recette",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Recherche de la recette avec le code:", shareCode);
+      
+      // Récupérer le partage avec ce code
+      const { data: shares, error: shareError } = await supabase
+        .from("recipe_shares")
+        .select(`
+          *,
+          recipe:recipes(*)
+        `)
+        .eq("share_code", shareCode)
+        .eq("status", "pending");
+
+      if (shareError) {
+        console.error("Erreur lors de la recherche du code:", shareError);
+        throw shareError;
+      }
+
+      if (!shares || shares.length === 0) {
+        toast({
+          title: "Erreur",
+          description: "Code de partage invalide ou expiré",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const share = shares[0];
+
+      if (!share.recipe) {
+        toast({
+          title: "Erreur",
+          description: "La recette partagée n'existe plus",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Processus de validation des types comme avant
+      const validCategory = [
+        "Apéros", "Entrées", "Plats", "Salades", 
+        "Desserts", "Soupes", "Autres"
+      ].includes(share.recipe.category) 
+        ? share.recipe.category as Category 
+        : "Autres";
+        
+      const validSubCategory = share.recipe.sub_category 
+        ? ([
+            "Viande", "Volaille", "Poisson", 
+            "Fruits de mer", "Légumes"
+          ].includes(share.recipe.sub_category)
+            ? share.recipe.sub_category as SubCategory
+            : undefined)
+        : undefined;
+      
       // 1. Créer une copie de la recette
       const { data: newRecipe, error: recipeError } = await supabase
         .from("recipes")
         .insert({
           ...share.recipe,
           id: undefined, // Pour générer un nouvel ID
-          user_id: (await supabase.auth.getSession()).data.session?.user.id,
-          shared_by_name: "Partagée"
+          user_id: session.user.id,
+          category: validCategory,
+          sub_category: validSubCategory,
+          shared_by_name: "Importée"
         })
         .select()
         .single();
 
-      if (recipeError) throw recipeError;
+      if (recipeError) {
+        console.error("Erreur lors de la copie de la recette:", recipeError);
+        throw recipeError;
+      }
 
       // 2. Marquer le partage comme accepté
-      const { error: shareError } = await supabase
+      const { error: updateError } = await supabase
         .from("recipe_shares")
         .update({ status: "accepted" })
         .eq("id", share.id);
 
-      if (shareError) throw shareError;
+      if (updateError) {
+        console.error("Erreur lors de la mise à jour du statut:", updateError);
+        // On continue même si cette étape échoue car la recette a été copiée
+      }
 
       toast({
         title: "Succès",
-        description: "La recette a été ajoutée à votre collection",
+        description: "La recette a été importée avec succès",
       });
 
-      fetchIncomingShares();
+      setShareCodeInput("");
+      
     } catch (error) {
-      console.error("Erreur lors de l'acceptation:", error);
+      console.error("Erreur complète lors de l'importation:", error);
       toast({
         title: "Erreur",
-        description: "Impossible d'accepter la recette partagée",
+        description: "Impossible d'importer la recette",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const rejectShare = async (share: RecipeShare) => {
-    try {
-      const { error } = await supabase
-        .from("recipe_shares")
-        .update({ status: "rejected" })
-        .eq("id", share.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Information",
-        description: "La recette a été refusée",
-      });
-
-      fetchIncomingShares();
-    } catch (error) {
-      console.error("Erreur lors du rejet:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de refuser la recette partagée",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Chargement initial des partages
-  useEffect(() => {
-    fetchIncomingShares().catch(error => {
-      console.error("Erreur lors du chargement initial des partages:", error);
-    });
-
-    // Rafraîchissement périodique toutes les 30 secondes
-    const intervalId = setInterval(() => {
-      fetchIncomingShares().catch(console.error);
-    }, 30000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [fetchIncomingShares]);
+  }, [toast]);
 
   return {
-    incomingShares,
     isLoading,
-    hasNewShares,
-    fetchIncomingShares,
-    acceptShare,
-    rejectShare,
-    clearNewSharesFlag: () => setHasNewShares(false)
+    shareCodeInput,
+    setShareCodeInput,
+    importRecipeByCode
   };
 }
