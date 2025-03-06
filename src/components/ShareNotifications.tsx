@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useRecipeShares } from "@/hooks/use-recipe-shares";
 import {
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Bell, AlertCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 export function ShareNotifications() {
   const { 

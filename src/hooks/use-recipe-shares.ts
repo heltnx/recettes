@@ -46,10 +46,17 @@ export function useRecipeShares() {
       }
 
       console.log("Partages trouvés:", shares?.length || 0);
-      setIncomingShares(shares || []);
-      setHasNewShares(shares?.length > 0);
+      
+      // Conversion explicite du statut pour s'assurer qu'il correspond au type attendu
+      const typedShares = shares?.map(share => ({
+        ...share,
+        status: share.status as 'pending' | 'accepted' | 'rejected'
+      })) || [];
+      
+      setIncomingShares(typedShares);
+      setHasNewShares(typedShares.length > 0);
       setIsLoading(false);
-      return shares;
+      return typedShares;
     } catch (error) {
       console.error("Erreur complète:", error);
       setIsLoading(false);
@@ -168,4 +175,3 @@ export function useRecipeShares() {
     clearNewSharesFlag: () => setHasNewShares(false)
   };
 }
-
