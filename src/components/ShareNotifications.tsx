@@ -11,9 +11,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
+import { Bell, AlertCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function ShareNotifications() {
   const { 
@@ -26,16 +27,22 @@ export function ShareNotifications() {
     fetchIncomingShares
   } = useRecipeShares();
   const [isOpen, setIsOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       clearNewSharesFlag();
+      setError(null);
+      
       // Recharger les partages quand on ouvre la boîte de dialogue
-      fetchIncomingShares();
+      fetchIncomingShares().catch(err => {
+        console.error("Erreur lors du chargement des partages:", err);
+        setError("Impossible de charger les partages de recettes");
+      });
     }
   }, [isOpen, clearNewSharesFlag, fetchIncomingShares]);
 
-  console.log("ShareNotifications - incomingShares:", incomingShares.length, "hasNewShares:", hasNewShares);
+  console.log("ShareNotifications - incomingShares:", incomingShares?.length || 0, "hasNewShares:", hasNewShares);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -44,7 +51,7 @@ export function ShareNotifications() {
           <Bell className="h-5 w-5" />
           {hasNewShares && (
             <Badge className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-5 h-5 flex items-center justify-center">
-              {incomingShares.length}
+              {incomingShares?.length || 0}
             </Badge>
           )}
         </Button>
@@ -57,18 +64,34 @@ export function ShareNotifications() {
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erreur</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           {isLoading ? (
-            <p className="text-center py-4">Chargement...</p>
-          ) : incomingShares.length === 0 ? (
-            <p className="text-center py-4">Aucune recette partagée en attente</p>
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+              <p className="text-sm text-muted-foreground">Chargement des recettes partagées...</p>
+            </div>
+          ) : incomingShares?.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Aucune recette partagée en attente</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Les recettes partagées avec vous apparaîtront ici
+              </p>
+            </div>
           ) : (
             <div className="space-y-4 py-2">
-              {incomingShares.map((share) => (
+              {incomingShares?.map((share) => (
                 <Card key={share.id}>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{share.recipe?.title}</CardTitle>
+                    <CardTitle className="text-base">{share.recipe?.title || "Recette sans titre"}</CardTitle>
                     <CardDescription className="text-xs">
-                      Catégorie: {share.recipe?.category}
+                      Catégorie: {share.recipe?.category || "Non spécifiée"}
                       {share.recipe?.sub_category && ` - ${share.recipe?.sub_category}`}
                     </CardDescription>
                   </CardHeader>
@@ -98,6 +121,18 @@ export function ShareNotifications() {
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Fermer
           </Button>
+          {!isLoading && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => fetchIncomingShares()}
+              disabled={isLoading}
+              className="flex items-center gap-1"
+            >
+              <Loader2 className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

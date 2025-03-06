@@ -27,7 +27,7 @@ export function useRecipeShares() {
     
     if (!session) {
       setIsLoading(false);
-      return;
+      throw new Error("Vous devez être connecté pour voir les recettes partagées");
     }
 
     try {
@@ -38,7 +38,7 @@ export function useRecipeShares() {
       if (!email) {
         console.error("Impossible de récupérer l'email de l'utilisateur");
         setIsLoading(false);
-        return;
+        throw new Error("Impossible de récupérer l'email de l'utilisateur");
       }
 
       console.log("Recherche de partages pour l'utilisateur:", session.user.id, "et email:", email);
@@ -59,7 +59,7 @@ export function useRecipeShares() {
         throw directError;
       }
 
-      console.log("Partages directs trouvés:", directShares.length);
+      console.log("Partages directs trouvés:", directShares?.length || 0);
 
       // Fetch shares that have our email as recipient_email but to_user_id is null
       const { data: emailShares, error: emailError } = await supabase
@@ -78,23 +78,20 @@ export function useRecipeShares() {
         throw emailError;
       }
 
-      console.log("Partages par email trouvés:", emailShares.length);
+      console.log("Partages par email trouvés:", emailShares?.length || 0);
 
       // Combine both types of shares
-      const allShares = [...directShares, ...emailShares];
+      const allShares = [...(directShares || []), ...(emailShares || [])];
       console.log("Total des partages en attente:", allShares.length);
       
       setIncomingShares(allShares as RecipeShare[]);
       setHasNewShares(allShares.length > 0);
+      setIsLoading(false);
+      return allShares;
     } catch (error) {
       console.error("Erreur complète:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de récupérer les partages de recettes",
-        variant: "destructive",
-      });
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   }, [toast]);
 
@@ -206,7 +203,9 @@ export function useRecipeShares() {
   };
 
   useEffect(() => {
-    fetchIncomingShares();
+    fetchIncomingShares().catch(error => {
+      console.error("Erreur lors du chargement initial des partages:", error);
+    });
 
     // Subscribe to changes in the recipe_shares table
     const sharesSubscription = supabase
@@ -220,7 +219,9 @@ export function useRecipeShares() {
         },
         (payload) => {
           console.log("Notification en temps réel reçue:", payload);
-          fetchIncomingShares();
+          fetchIncomingShares().catch(error => {
+            console.error("Erreur lors de la mise à jour après notification:", error);
+          });
         }
       )
       .subscribe();
